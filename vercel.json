@@ -1,13 +1,14 @@
 {
   "version": 2,
-  "framework": null,
-  "buildCommand": "npm ci --production=false && npm run build",
+  "buildCommand": "npm ci --include=dev && npm run build",
   "outputDirectory": "public",
   "functions": {
-    "api/index.php": { "runtime": "vercel-php@0.7.4" }
+    "api/index.php": {
+      "runtime": "vercel-php@0.7.4"
+    }
   },
   "routes": [
-    { "src": "/build/(.*)", "dest": "/build/$1" },
+    { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/api/index.php" }
   ]
 }
