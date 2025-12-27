@@ -10,7 +10,6 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    // Usaremos pgsql por defecto (Supabase)
     'default' => env('DB_CONNECTION', 'pgsql'),
 
     /*
@@ -74,29 +73,31 @@ return [
         ],
 
         'pgsql' => [
-            'driver'    => 'pgsql',
+            'driver' => 'pgsql',
 
-            // Acepta DB_URL o DATABASE_URL si algún día lo usas
-            'url'       => env('DB_URL', env('DATABASE_URL')),
+            // Acepta DB_URL o DATABASE_URL (útil para servicios que dan URL completa)
+            'url' => env('DB_URL', env('DATABASE_URL')),
 
-            'host'      => env('DB_HOST', '127.0.0.1'),
-            'port'      => env('DB_PORT', '5432'),
-            'database'  => env('DB_DATABASE', 'postgres'),
-            'username'  => env('DB_USERNAME', 'postgres'),
-            'password'  => (function () {
+            'host' => env('DB_HOST', '127.0.0.1'),
+            'port' => env('DB_PORT', '5432'),
+            'database' => env('DB_DATABASE', 'postgres'),
+            'username' => env('DB_USERNAME', 'postgres'),
+
+            // Guard: si por error llega un array desde .env, lo convertimos a string
+            'password' => (function () {
                 $pw = env('DB_PASSWORD', '');
                 return is_array($pw) ? implode('', $pw) : $pw;
             })(),
 
-            'charset'        => env('DB_CHARSET', 'utf8'),
-            'prefix'         => '',
+            'charset' => env('DB_CHARSET', 'utf8'),
+            'prefix' => '',
             'prefix_indexes' => true,
 
-            // Schema (Supabase usa 'public' por defecto)
-            'search_path'    => env('DB_SCHEMA', 'public'),
+            // Schema de Supabase (normalmente "public")
+            'search_path' => env('DB_SCHEMA', 'public'),
 
             // Supabase normalmente requiere SSL
-            'sslmode'        => env('DB_SSLMODE', 'require'),
+            'sslmode' => env('DB_SSLMODE', 'require'),
         ],
 
         'sqlsrv' => [
@@ -139,10 +140,7 @@ return [
 
         'options' => [
             'cluster' => env('REDIS_CLUSTER', 'redis'),
-            'prefix' => env(
-                'REDIS_PREFIX',
-                Str::slug((string) env('APP_NAME', 'laravel')).'-database-'
-            ),
+            'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel')).'-database-'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],
 
