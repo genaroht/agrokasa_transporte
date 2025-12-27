@@ -1,0 +1,8 @@
+node_modules
+vendor
+storage
+bootstrap/cache/*.php
+tests
+.idea
+.vscode
+.env

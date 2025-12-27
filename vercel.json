@@ -1,0 +1,14 @@
+{
+  "version": 2,
+  "functions": {
+    "api/index.php": {
+      "runtime": "[email protected]"
+    }
+  },
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.php"
+    }
+  ]
+}
