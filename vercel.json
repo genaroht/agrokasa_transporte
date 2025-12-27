@@ -1,5 +1,4 @@
 {
-  "version": 2,
   "buildCommand": "composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader && npm ci && npm run build",
   "outputDirectory": "public",
   "functions": {
@@ -8,7 +7,7 @@
     }
   },
   "routes": [
-    { "handle": "filesystem" },
+    { "src": "/build/(.*)", "dest": "/build/$1" },
     { "src": "/(.*)", "dest": "/api/index.php" }
   ]
 }
