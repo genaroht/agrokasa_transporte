@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="es"
       x-data="layoutState()"
-      x-init="init()" class="h-full">
+      x-init="init()">
 <head>
 
     <meta charset="utf-8">
