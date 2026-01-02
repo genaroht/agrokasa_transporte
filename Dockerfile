@@ -31,8 +31,8 @@ WORKDIR /var/www/html
 # 5) Copiar archivos de definición de dependencias primero (para caché)
 COPY composer.json composer.lock ./
 
-# Instalar dependencias PHP (sin dev, optimizado para producción)
-RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+# ⛔ IMPORTANTE: instalar dependencias PHP SIN scripts (para que no llame a "php artisan")
+RUN composer install --no-dev --optimize-autoloader --no-interaction --no-progress --no-scripts
 
 # 6) Copiar archivos de frontend para instalar dependencias JS
 COPY package.json package-lock.json* vite.config.* ./
@@ -40,7 +40,7 @@ COPY package.json package-lock.json* vite.config.* ./
 # Instalar dependencias de Node solo si existe package.json
 RUN if [ -f package.json ]; then npm ci; fi
 
-# 7) Copiar TODO el proyecto
+# 7) Copiar TODO el proyecto (incluye artisan, app/, config/, resources/, etc.)
 COPY . .
 
 # 8) Compilar assets con Vite (si existe package.json)
@@ -57,9 +57,11 @@ RUN mkdir -p storage/framework/cache \
 EXPOSE 8000
 
 # 11) Comando de arranque:
-#     - Regenera caches de config, rutas y vistas usando las variables de entorno de Render
-#     - Levanta el servidor de Laravel escuchando en $PORT
+#     - Ejecuta package:discover ahora que el código ya está presente
+#     - Limpia y genera caches
+#     - Levanta el servidor Laravel escuchando en $PORT
 CMD ["sh", "-c", "\
+    php artisan package:discover --ansi || true && \
     php artisan config:clear && \
     php artisan route:clear && \
     php artisan view:clear && \
