@@ -74,31 +74,19 @@ return [
 
         'pgsql' => [
             'driver' => 'pgsql',
-
-            // Acepta DB_URL o DATABASE_URL (útil para servicios que dan URL completa)
             'url' => env('DB_URL', env('DATABASE_URL')),
-
             'host' => env('DB_HOST', '127.0.0.1'),
             'port' => env('DB_PORT', '5432'),
             'database' => env('DB_DATABASE', 'postgres'),
             'username' => env('DB_USERNAME', 'postgres'),
-
-            // Guard: si por error llega un array desde .env, lo convertimos a string
-            'password' => (function () {
-                $pw = env('DB_PASSWORD', '');
-                return is_array($pw) ? implode('', $pw) : $pw;
-            })(),
-
+            'password' => env('DB_PASSWORD', ''),
             'charset' => env('DB_CHARSET', 'utf8'),
             'prefix' => '',
             'prefix_indexes' => true,
-
-            // Schema de Supabase (normalmente "public")
             'search_path' => env('DB_SCHEMA', 'public'),
-
-            // Supabase normalmente requiere SSL
             'sslmode' => env('DB_SSLMODE', 'require'),
         ],
+
 
         'sqlsrv' => [
             'driver' => 'sqlsrv',

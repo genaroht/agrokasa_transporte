@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="es"
       x-data="layoutState()"
-      x-init="init()"
-      :class="darkMode ? 'dark' : ''">
+      x-init="init()" class="h-full">
 <head>
+
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@yield('title','AGROKASA Transporte')</title>
@@ -465,33 +465,226 @@
         </div>
     </div>
 
-    {{-- Menú móvil simple --}}
-    <div class="md:hidden fixed inset-0 z-40 bg-black/40"
-         x-show="mobileSidebarOpen"
-         x-transition.opacity>
-        <div class="absolute inset-y-0 left-0 w-64 bg-white dark:bg-slate-950 shadow-xl p-3">
-            <button class="mb-3 p-2 rounded hover:bg-gray-100 dark:hover:bg-slate-800"
-                    @click="mobileSidebarOpen = false">
-                Cerrar
-            </button>
-            <div class="text-xs text-gray-500 dark:text-slate-400">
-                Menú móvil: puedes reutilizar el contenido del sidebar principal.
+{{-- PANEL LATERAL MÓVIL --}}
+<div
+    x-cloak
+    x-show="mobileSidebarOpen"
+    x-transition.opacity
+    class="fixed inset-0 z-40 flex md:hidden"
+    role="dialog"
+    aria-modal="true"
+>
+    {{-- Fondo oscuro --}}
+    <div class="fixed inset-0 bg-black/40" @click="mobileSidebarOpen = false"></div>
+
+    {{-- Panel lateral --}}
+    <div class="relative flex w-full max-w-xs">
+        <div class="flex flex-col w-full h-full bg-white shadow-xl">
+            {{-- Header del menú móvil --}}
+            <div class="flex items-center justify-between h-14 px-4 border-b border-slate-200">
+                <p class="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                    Menú
+                </p>
+                <button
+                    type="button"
+                    class="p-2 rounded-md text-slate-500 hover:bg-slate-100"
+                    @click="mobileSidebarOpen = false"
+                >
+                    Cerrar
+                </button>
+            </div>
+
+            {{-- Contenido del menú móvil --}}
+            <div class="flex-1 overflow-y-auto py-4 text-sm">
+
+                {{-- DASHBOARD --}}
+                <div class="px-4 mb-3">
+                    <a
+                        href="{{ route('dashboard') }}"
+                        class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                               {{ request()->routeIs('dashboard') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                        @click="mobileSidebarOpen = false"
+                    >
+                        Dashboard
+                    </a>
+                </div>
+
+                {{-- PROGRAMACIONES --}}
+                <div class="mt-4">
+                    <p class="px-7 mb-1 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                        Programaciones
+                    </p>
+                    <div class="space-y-1 px-4">
+                        <a
+                            href="{{ route('programaciones.index') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('programaciones.index') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Programaciones
+                        </a>
+
+                        <a
+                            href="{{ route('programaciones.resumen.paradero-horario') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('programaciones.resumen.paradero-horario') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Resumen Paradero x Horario
+                        </a>
+
+                        <a
+                            href="{{ route('programaciones.resumen.ruta-paradero') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('programaciones.resumen.ruta-paradero') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Resumen Ruta x Paradero
+                        </a>
+
+                        <a
+                            href="{{ route('programaciones.reporte_ruta_lote_com') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('programaciones.reporte_ruta_lote_com') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Ruta / Lote / Comedor
+                        </a>
+                    </div>
+                </div>
+
+                {{-- CATÁLOGOS --}}
+                <div class="mt-6">
+                    <p class="px-7 mb-1 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                        Catálogos
+                    </p>
+                    <div class="space-y-1 px-4">
+                        <a
+                            href="{{ route('catalogos.horarios.index') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('catalogos.horarios.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Horarios
+                        </a>
+
+                        <a
+                            href="{{ route('catalogos.paraderos.index') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('catalogos.paraderos.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Paraderos
+                        </a>
+
+                        <a
+                            href="{{ route('catalogos.rutas.index') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('catalogos.rutas.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Rutas
+                        </a>
+
+                        <a
+                            href="{{ route('catalogos.lugares.index') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('catalogos.lugares.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Lugares
+                        </a>
+
+                        <a
+                            href="{{ route('catalogos.areas.index') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('catalogos.areas.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Áreas
+                        </a>
+                    </div>
+                </div>
+
+                {{-- SEGURIDAD --}}
+                <div class="mt-6 mb-4">
+                    <p class="px-7 mb-1 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                        Seguridad
+                    </p>
+                    <div class="space-y-1 px-4">
+                        <a
+                            href="{{ route('usuarios.index') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('usuarios.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Usuarios
+                        </a>
+
+                        <a
+                            href="{{ route('roles.index') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('roles.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Roles
+                        </a>
+
+                        <a
+                            href="{{ route('sucursales.index') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('sucursales.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Sucursales
+                        </a>
+
+                        <a
+                            href="{{ route('timewindows.index') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('timewindows.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Ventanas de tiempo
+                        </a>
+
+                        <a
+                            href="{{ route('auditoria.index') }}"
+                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                   {{ request()->routeIs('auditoria.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                            @click="mobileSidebarOpen = false"
+                        >
+                            Auditoría
+                        </a>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
-@endif {{-- fin if $user --}}
+</div>
+{{-- FIN PANEL LATERAL MÓVIL --}}
+
 
 <script>
     function layoutState() {
         return {
-            darkMode: localStorage.getItem('ak_dark') === '1',
+            // Siempre modo claro
+            darkMode: false,
             mobileSidebarOpen: false,
             now: new Date('{{ $now->format('Y-m-d H:i:s') }}'.replace(' ', 'T')),
+
             init() {
+                // Reloj del header
                 setInterval(() => {
                     this.now = new Date(this.now.getTime() + 1000);
                 }, 1000);
+
+                // Aseguramos que no quede ninguna preferencia de modo oscuro guardada
+                localStorage.removeItem('ak_dark');
+                document.documentElement.classList.remove('dark');
             },
+
             get nowFormatted() {
                 const pad = (n) => n.toString().padStart(2, '0');
                 const d = this.now;
@@ -503,9 +696,12 @@
                 const ss = pad(d.getSeconds());
                 return `${dd}/${mm}/${yyyy} ${hh}:${mi}:${ss}`;
             },
+
             toggleDarkMode() {
-                this.darkMode = !this.darkMode;
-                localStorage.setItem('ak_dark', this.darkMode ? '1' : '0');
+                // Desactivamos por completo el modo oscuro
+                this.darkMode = false;
+                localStorage.removeItem('ak_dark');
+                document.documentElement.classList.remove('dark');
             }
         }
     }
