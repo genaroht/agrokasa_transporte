@@ -44,19 +44,19 @@
 <div class="flex flex-col gap-4">
 
     {{-- BARRA SUPERIOR: CONTEXTO Y FILTROS --}}
-    <div class="bg-white dark:bg-slate-950 rounded-lg shadow p-4 text-xs flex flex-col gap-3">
+    <div class="bg-white rounded-lg shadow p-4 text-xs flex flex-col gap-3">
         <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
             <div>
                 <div class="font-semibold text-sm">
                     Programación rápida por Ruta / Lote / Comedor y Paradero
                 </div>
-                <div class="text-[11px] text-gray-500 dark:text-slate-400">
+                <div class="text-[11px] text-gray-500">
                     El sistema fija tu Área y Horario según tus permisos.
                     Solo digitas la cantidad en cada paradero para cada Ruta / Lote / Comedor.
                 </div>
             </div>
 
-            <div class="text-[11px] text-gray-600 dark:text-slate-300">
+            <div class="text-[11px] text-gray-600">
                 <div><span class="font-semibold">Sucursal:</span> {{ $sucursalContexto->nombre ?? 'No definida' }}</div>
             </div>
         </div>
@@ -67,18 +67,18 @@
 
             {{-- Fecha --}}
             <div>
-                <label class="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Fecha</label>
+                <label class="block text-[11px] text-gray-500 mb-1">Fecha</label>
                 <input type="date"
                        name="fecha"
                        value="{{ $fecha }}"
-                       class="w-full border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-xs bg-white dark:bg-slate-900">
+                       class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-white">
             </div>
 
             {{-- Tipo --}}
             <div>
-                <label class="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Tipo</label>
+                <label class="block text-[11px] text-gray-500 mb-1">Tipo</label>
                 <select name="tipo"
-                        class="w-full border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-xs bg-white dark:bg-slate-900">
+                        class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-white">
                     <option value="recojo" @selected($tipo === 'recojo')>Recojo</option>
                     <option value="salida" @selected($tipo === 'salida')>Salida</option>
                 </select>
@@ -86,11 +86,11 @@
 
             {{-- Área --}}
             <div>
-                <label class="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Área</label>
+                <label class="block text-[11px] text-gray-500 mb-1">Área</label>
 
                 <select name="area_id"
                         @if($soloAreaFija) disabled @endif
-                        class="w-full border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-xs bg-white dark:bg-slate-900">
+                        class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-white">
                     @foreach($areas as $a)
                         <option value="{{ $a->id }}" @selected($areaIdSeleccionado == $a->id)>
                             {{ $a->nombre }}
@@ -107,9 +107,9 @@
 
             {{-- Horario --}}
             <div>
-                <label class="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Horario</label>
+                <label class="block text-[11px] text-gray-500 mb-1">Horario</label>
                 <select name="horario_id"
-                        class="w-full border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-xs bg-white dark:bg-slate-900">
+                        class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-white">
                     @forelse($horarios as $h)
                         <option value="{{ $h->id }}" @selected($horarioIdSeleccionado == $h->id)>
                             {{ $h->nombre }}
@@ -124,7 +124,7 @@
             </div>
 
             <div class="flex justify-end">
-                <button class="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-gray-100 dark:bg-slate-800 text-xs">
+                <button class="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-gray-100 text-xs">
                     <svg viewBox="0 0 24 24" class="w-3 h-3">
                         <path fill="currentColor" d="M3 4h18v2H3V4zm4 4h10v2H7V8zm-4 4h18v2H3v-2zm4 4h10v2H7v-2z"/>
                     </svg>
@@ -136,15 +136,15 @@
 
     {{-- FORM PRINCIPAL DE MATRIZ RUTA/LOTE/COM x PARADERO --}}
     @if($areas->isEmpty() || $horarios->isEmpty())
-        <div class="bg-white dark:bg-slate-950 rounded-lg shadow p-4 text-xs text-center text-gray-500 dark:text-slate-400">
+        <div class="bg-white rounded-lg shadow p-4 text-xs text-center text-gray-500">
             No hay Área u Horario configurado para capturar.
         </div>
     @elseif($paraderosPorLugar->isEmpty())
-        <div class="bg-white dark:bg-slate-950 rounded-lg shadow p-4 text-xs text-center text-gray-500 dark:text-slate-400">
+        <div class="bg-white rounded-lg shadow p-4 text-xs text-center text-gray-500">
             No hay paraderos activos configurados para esta sucursal.
         </div>
     @elseif(empty($filas))
-        <div class="bg-white dark:bg-slate-950 rounded-lg shadow p-4 text-xs text-center text-gray-500 dark:text-slate-400">
+        <div class="bg-white rounded-lg shadow p-4 text-xs text-center text-gray-500">
             No hay combinaciones de Ruta / Lote / Comedor configuradas.
         </div>
     @else
@@ -164,20 +164,20 @@
             <input type="hidden" name="area_id" value="{{ $areaIdSeleccionado }}">
             <input type="hidden" name="horario_id" value="{{ $horarioIdSeleccionado }}">
 
-            <div class="bg-white dark:bg-slate-950 rounded-lg shadow p-4 text-xs flex flex-col gap-3">
+            <div class="bg-white rounded-lg shadow p-4 text-xs flex flex-col gap-3">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-2">
                     <div>
                         <div class="font-semibold text-sm">
                             Matriz de captura por Lugar (paso a paso)
                         </div>
-                        <div class="text-[11px] text-gray-500 dark:text-slate-400">
+                        <div class="text-[11px] text-gray-500">
                             Se muestra un Lugar a la vez. Usa los botones de Lugar o
                             <strong>Anterior / Siguiente</strong> para moverte entre lugares.
                             La información se guarda cuando pulses
                             <strong>Guardar programación rápida</strong>.
                         </div>
                     </div>
-                    <div class="text-[11px] text-gray-600 dark:text-slate-300 text-right">
+                    <div class="text-[11px] text-gray-600 text-right">
                         @if($programacion)
                             <span class="font-semibold">Programación actual:</span>
                             {{ $programacion->fecha->format('d/m/Y') }}
@@ -191,11 +191,11 @@
                     </div>
                 </div>
 
-                {{-- NAV DEL WIZARD POR LUGAR (botones arriba, texto + Anterior/Siguiente abajo) --}}
+                {{-- NAV DEL WIZARD POR LUGAR --}}
                 <div class="mb-3 flex flex-col gap-2">
                     {{-- Fila 1: botones de Lugar --}}
                     <div class="flex flex-wrap items-center gap-2">
-                        <span class="text-[11px] text-gray-500 dark:text-slate-400">
+                        <span class="text-[11px] text-gray-500">
                             Ir a lugar:
                         </span>
 
@@ -208,10 +208,10 @@
                                         : strtoupper($nombreLugar);
                                 @endphp
                                 <button type="button"
-                                        class="btn-lugar px-2 py-1 rounded border border-gray-300 dark:border-slate-700
-                                               text-[11px] text-gray-700 dark:text-slate-200
-                                               bg-white dark:bg-slate-900
-                                               hover:bg-gray-100 dark:hover:bg-slate-800 whitespace-nowrap"
+                                        class="btn-lugar px-2 py-1 rounded border border-gray-300
+                                               text-[11px] text-gray-700
+                                               bg-white
+                                               hover:bg-gray-100 whitespace-nowrap"
                                         data-index="{{ $idx }}">
                                     {{ $tituloLugar }}
                                 </button>
@@ -219,9 +219,9 @@
                         </div>
                     </div>
 
-                    {{-- Fila 2: "Lugar X de Y: NOMBRE" + Anterior/Siguiente en la misma recta --}}
+                    {{-- Fila 2: "Lugar X de Y: NOMBRE" + Anterior/Siguiente --}}
                     <div class="flex flex-wrap items-center justify-between gap-2">
-                        <div class="text-[11px] text-gray-600 dark:text-slate-300">
+                        <div class="text-[11px] text-gray-600">
                             Lugar <span id="lugar-actual">1</span> de {{ $totalLugares }}:
                             <span id="label-lugar-actual" class="font-semibold"></span>
                         </div>
@@ -229,19 +229,19 @@
                         <div class="flex gap-1">
                             <button type="button"
                                     id="btn-prev-lugar"
-                                    class="px-2 py-1 rounded border border-gray-300 dark:border-slate-700 text-[11px] text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-40">
+                                    class="px-2 py-1 rounded border border-gray-300 text-[11px] text-gray-700 hover:bg-gray-50 disabled:opacity-40">
                                 ◀ Anterior
                             </button>
                             <button type="button"
                                     id="btn-next-lugar"
-                                    class="px-2 py-1 rounded border border-gray-300 dark:border-slate-700 text-[11px] text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800 disabled:opacity-40">
+                                    class="px-2 py-1 rounded border border-gray-300 text-[11px] text-gray-700 hover:bg-gray-50 disabled:opacity-40">
                                 Siguiente ▶
                             </button>
                         </div>
                     </div>
                 </div>
 
-                {{-- BLOQUES POR LUGAR (solo se ve uno a la vez, controlado por JS) --}}
+                {{-- BLOQUES POR LUGAR --}}
                 <div class="flex flex-col gap-4">
                     @foreach($paraderosPorLugar as $nombreLugar => $grupo)
                         @php
@@ -250,15 +250,15 @@
                                 : strtoupper($nombreLugar);
                         @endphp
 
-                        <div class="lugar-block border border-slate-200 dark:border-slate-800 rounded-lg overflow-hidden @if(!$loop->first) hidden @endif"
+                        <div class="lugar-block border border-gray-200 rounded-lg overflow-hidden @if(!$loop->first) hidden @endif"
                              data-lugar-index="{{ $loop->index }}"
                              data-lugar-nombre="{{ $tituloLugar }}">
                             {{-- Cabecera del bloque --}}
-                            <div class="bg-slate-900 text-white px-3 py-2 text-[11px] font-semibold flex justify-between">
+                            <div class="bg-[var(--primary)] text-white px-3 py-2 text-[11px] font-semibold flex justify-between">
                                 <span>
                                     Lugar: {{ $tituloLugar }}
                                 </span>
-                                <span class="font-normal text-slate-200">
+                                <span class="font-normal text-emerald-100">
                                     Paraderos: {{ $grupo->count() }}
                                 </span>
                             </div>
@@ -267,19 +267,19 @@
                             <div class="overflow-x-auto">
                                 <table class="min-w-full text-[11px] border-collapse">
                                     <thead>
-                                        <tr class="bg-slate-100 dark:bg-slate-900/60">
-                                            <th class="border border-slate-200 dark:border-slate-800 px-2 py-1 text-left">
+                                        <tr class="bg-gray-100">
+                                            <th class="border border-gray-200 px-2 py-1 text-left">
                                                 Ruta
                                             </th>
-                                            <th class="border border-slate-200 dark:border-slate-800 px-2 py-1 text-left">
+                                            <th class="border border-gray-200 px-2 py-1 text-left">
                                                 Lote
                                             </th>
-                                            <th class="border border-slate-200 dark:border-slate-800 px-2 py-1 text-left">
+                                            <th class="border border-gray-200 px-2 py-1 text-left">
                                                 Comedor
                                             </th>
 
                                             @foreach($grupo as $paradero)
-                                                <th class="border border-slate-200 dark:border-slate-800 px-2 py-1 text-center whitespace-nowrap">
+                                                <th class="border border-gray-200 px-2 py-1 text-center whitespace-nowrap">
                                                     {{ $paradero->nombre }}
                                                 </th>
                                             @endforeach
@@ -292,14 +292,14 @@
                                                 $lote       = $fila['lote'] ?? '';
                                                 $comedor    = $fila['comedor'] ?? '';
                                             @endphp
-                                            <tr class="{{ $loop->odd ? 'bg-white dark:bg-slate-950' : 'bg-slate-50 dark:bg-slate-900/40' }}">
-                                                <td class="border border-slate-200 dark:border-slate-800 px-2 py-1 whitespace-nowrap">
+                                            <tr class="{{ $loop->odd ? 'bg-white' : 'bg-gray-50' }}">
+                                                <td class="border border-gray-200 px-2 py-1 whitespace-nowrap">
                                                     {{ $rutaCodigo }}
                                                 </td>
-                                                <td class="border border-slate-200 dark:border-slate-800 px-2 py-1 whitespace-nowrap">
+                                                <td class="border border-gray-200 px-2 py-1 whitespace-nowrap">
                                                     {{ $lote !== '' ? $lote : '–' }}
                                                 </td>
-                                                <td class="border border-slate-200 dark:border-slate-800 px-2 py-1 whitespace-nowrap">
+                                                <td class="border border-gray-200 px-2 py-1 whitespace-nowrap">
                                                     {{ $comedor !== '' ? $comedor : '–' }}
                                                 </td>
 
@@ -308,14 +308,14 @@
                                                         $pid   = $paradero->id;
                                                         $valor = $matrix[$keyFila][$pid] ?? null;
                                                     @endphp
-                                                    <td class="border border-slate-200 dark:border-slate-800 px-1.5 py-0.5 text-right align-middle">
+                                                    <td class="border border-gray-200 px-1.5 py-0.5 text-right align-middle">
                                                         <input
                                                             type="number"
                                                             name="matrix[{{ $keyFila }}][{{ $pid }}]"
                                                             value="{{ $valor !== null ? $valor : '' }}"
                                                             min="0"
                                                             step="1"
-                                                            class="w-16 md:w-20 text-right border border-slate-300 dark:border-slate-700 rounded px-1 py-0.5 text-[11px] bg-white dark:bg-slate-900"
+                                                            class="w-16 md:w-20 text-right border border-gray-300 rounded px-1 py-0.5 text-[11px] bg-white"
                                                             placeholder="0"
                                                         >
                                                     </td>
@@ -332,7 +332,7 @@
 
             {{-- BOTONES FINALES --}}
             <div class="flex justify-between items-center mt-2">
-                <div class="text-[10px] text-gray-500 dark:text-slate-400">
+                <div class="text-[10px] text-gray-500">
                     Al guardar, se reemplazará la programación de este
                     <strong>Área / Horario / Tipo / Fecha</strong>
                     por las cantidades de esta matriz (Ruta / Lote / Comedor x Paradero).
@@ -340,7 +340,7 @@
 
                 <div class="flex gap-2">
                     <a href="{{ route('programaciones.index') }}"
-                       class="px-3 py-1.5 rounded border border-gray-300 dark:border-slate-700 text-xs text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-800">
+                       class="px-3 py-1.5 rounded border border-gray-300 text-xs text-gray-700 hover:bg-gray-50">
                         Volver a Programaciones
                     </a>
 
@@ -352,7 +352,7 @@
             </div>
         </form>
 
-        {{-- JS DEL WIZARD POR LUGAR (USANDO BOTONES) --}}
+        {{-- JS DEL WIZARD POR LUGAR --}}
         <script>
             document.addEventListener('DOMContentLoaded', function () {
                 const blocks         = Array.from(document.querySelectorAll('.lugar-block'));
@@ -372,10 +372,10 @@
                         const idx = parseInt(btn.dataset.index, 10) || 0;
                         if (idx === index) {
                             btn.classList.add('bg-[var(--primary)]', 'text-white', 'border-[var(--primary)]');
-                            btn.classList.remove('bg-white', 'dark:bg-slate-900', 'text-gray-700', 'dark:text-slate-200');
+                            btn.classList.remove('bg-white', 'text-gray-700');
                         } else {
                             btn.classList.remove('bg-[var(--primary)]', 'text-white', 'border-[var(--primary)]');
-                            btn.classList.add('bg-white', 'dark:bg-slate-900', 'text-gray-700', 'dark:text-slate-200');
+                            btn.classList.add('bg-white', 'text-gray-700');
                         }
                     });
                 }

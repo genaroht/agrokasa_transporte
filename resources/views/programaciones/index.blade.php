@@ -23,11 +23,11 @@
 @endif
 
 {{-- HEADER + BOTONES DE PROGRAMACIÓN --}}
-<div class="bg-white dark:bg-slate-950 rounded-lg shadow p-3 md:p-4 text-sm mb-3">
+<div class="bg-white rounded-lg shadow p-3 md:p-4 text-sm mb-3">
     <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
         <div>
             <div class="font-semibold text-sm">Programaciones</div>
-            <div class="text-[11px] text-gray-500 dark:text-slate-400">
+            <div class="text-[11px] text-gray-500">
                 Gestión de programación diaria de transporte de personal
             </div>
         </div>
@@ -54,23 +54,23 @@
     <form method="GET" action="{{ route('programaciones.index') }}"
           class="mt-3 grid grid-cols-2 md:grid-cols-7 gap-2 md:gap-3 items-end">
         <div>
-            <label class="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Fecha desde</label>
+            <label class="block text-[11px] text-gray-500 mb-1">Fecha desde</label>
             <input type="date" name="fecha_desde"
                    value="{{ request('fecha_desde', now()->toDateString()) }}"
-                   class="w-full border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-xs bg-white dark:bg-slate-900">
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-white">
         </div>
 
         <div>
-            <label class="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Fecha hasta</label>
+            <label class="block text-[11px] text-gray-500 mb-1">Fecha hasta</label>
             <input type="date" name="fecha_hasta"
                    value="{{ request('fecha_hasta', now()->toDateString()) }}"
-                   class="w-full border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-xs bg-white dark:bg-slate-900">
+                   class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-white">
         </div>
 
         <div>
-            <label class="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Área</label>
+            <label class="block text-[11px] text-gray-500 mb-1">Área</label>
             <select name="area_id"
-                    class="w-full border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-xs bg-white dark:bg-slate-900">
+                    class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-white">
                 <option value="">Todas</option>
                 @foreach($areas as $a)
                     <option value="{{ $a->id }}" @selected(request('area_id') == $a->id)>
@@ -81,9 +81,9 @@
         </div>
 
         <div>
-            <label class="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Horario</label>
+            <label class="block text-[11px] text-gray-500 mb-1">Horario</label>
             <select name="horario_id"
-                    class="w-full border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-xs bg-white dark:bg-slate-900">
+                    class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-white">
                 <option value="">Todos</option>
                 @foreach($horarios as $h)
                     <option value="{{ $h->id }}" @selected(request('horario_id') == $h->id)>
@@ -95,9 +95,9 @@
 
         {{-- Tipo: recojo / salida --}}
         <div>
-            <label class="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Tipo</label>
+            <label class="block text-[11px] text-gray-500 mb-1">Tipo</label>
             <select name="tipo"
-                    class="w-full border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-xs bg-white dark:bg-slate-900">
+                    class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-white">
                 <option value="">Todos</option>
                 <option value="recojo" @selected(request('tipo') === 'recojo')>Recojo</option>
                 <option value="salida" @selected(request('tipo') === 'salida')>Salida</option>
@@ -105,9 +105,9 @@
         </div>
 
         <div>
-            <label class="block text-[11px] text-gray-500 dark:text-slate-400 mb-1">Estado</label>
+            <label class="block text-[11px] text-gray-500 mb-1">Estado</label>
             <select name="estado"
-                    class="w-full border border-gray-300 dark:border-slate-700 rounded px-2 py-1 text-xs bg-white dark:bg-slate-900">
+                    class="w-full border border-gray-300 rounded px-2 py-1 text-xs bg-white">
                 <option value="">Todos</option>
                 <option value="borrador" @selected(request('estado') === 'borrador')>Borrador</option>
                 <option value="confirmado" @selected(request('estado') === 'confirmado')>Confirmado</option>
@@ -116,7 +116,7 @@
         </div>
 
         <div class="flex justify-end gap-2">
-            <button class="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-gray-100 dark:bg-slate-800 text-xs">
+            <button class="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-gray-100 text-xs">
                 <svg viewBox="0 0 24 24" class="w-3 h-3">
                     <path fill="currentColor" d="M3 4h18v2H3V4zm4 4h10v2H7V8zm-4 4h18v2H3v-2zm4 4h10v2H7v-2z"/>
                 </svg>
@@ -127,10 +127,10 @@
 </div>
 
 {{-- ESCRITORIO: TABLA --}}
-<div class="hidden md:block bg-white dark:bg-slate-950 rounded-lg shadow p-4 text-xs overflow-x-auto">
-    <table class="min-w-full border border-gray-200 dark:border-slate-800">
+<div class="hidden md:block bg-white rounded-lg shadow p-4 text-xs overflow-x-auto">
+    <table class="min-w-full border border-gray-200">
         <thead>
-        <tr class="bg-gray-100 dark:bg-slate-900">
+        <tr class="bg-gray-100">
             <th class="border px-2 py-1 text-left">Fecha</th>
             <th class="border px-2 py-1 text-left">Sucursal</th>
             <th class="border px-2 py-1 text-left">Área</th>
@@ -142,7 +142,7 @@
         </thead>
         <tbody>
         @forelse($programaciones as $p)
-            <tr class="hover:bg-gray-50 dark:hover:bg-slate-900/60 transition">
+            <tr class="hover:bg-gray-50 transition">
                 <td class="border px-2 py-1">
                     {{ $p->fecha->format('d/m/Y') }}
                 </td>
@@ -174,7 +174,7 @@
                     <div class="inline-flex items-center gap-1">
                         @if($user && $user->hasPermissionTo('gestionar_programaciones'))
                             <a href="{{ route('programaciones.edit', $p) }}"
-                               class="px-2 py-0.5 rounded bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-[11px]">
+                               class="px-2 py-0.5 rounded bg-gray-100 hover:bg-gray-200 text-[11px]">
                                 Editar
                             </a>
                         @endif
@@ -197,7 +197,7 @@
             </tr>
         @empty
             <tr>
-                <td colspan="7" class="border px-2 py-2 text-center text-gray-500 dark:text-slate-400">
+                <td colspan="7" class="border px-2 py-2 text-center text-gray-500">
                     No hay programaciones para los filtros seleccionados.
                 </td>
             </tr>
@@ -213,18 +213,18 @@
 {{-- MÓVIL: TARJETAS --}}
 <div class="md:hidden space-y-2">
     @forelse($programaciones as $p)
-        <div class="bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-3 text-xs">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3 text-xs">
             <div class="flex justify-between items-start mb-2">
                 <div>
                     <div class="font-semibold text-[13px]">
                         {{ $p->area->nombre }}
                     </div>
-                    <div class="text-[11px] text-gray-500 dark:text-slate-400">
+                    <div class="text-[11px] text-gray-500">
                         {{ $p->sucursal->nombre }}
                     </div>
                 </div>
                 <div class="text-right">
-                    <div class="text-[11px] text-gray-500 dark:text-slate-400">
+                    <div class="text-[11px] text-gray-500">
                         {{ $p->fecha->format('d/m/Y') }}
                     </div>
                     <div class="text-[11px] font-medium">
@@ -236,7 +236,7 @@
 
             <div class="flex justify-between items-center mb-2">
                 <div class="flex items-center gap-1 text-[11px]">
-                    <span class="text-gray-500 dark:text-slate-400">Personas:</span>
+                    <span class="text-gray-500">Personas:</span>
                     <span class="font-semibold">{{ $p->total_personas }}</span>
                 </div>
                 <div>
@@ -276,7 +276,7 @@
             </div>
         </div>
     @empty
-        <div class="bg-white dark:bg-slate-950 rounded-lg shadow-sm border border-gray-100 dark:border-slate-800 p-3 text-xs text-center text-gray-500 dark:text-slate-400">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-100 p-3 text-xs text-center text-gray-500">
             No hay programaciones para los filtros seleccionados.
         </div>
     @endforelse

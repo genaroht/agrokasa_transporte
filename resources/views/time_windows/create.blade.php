@@ -4,7 +4,7 @@
 @section('header','Crear ventana de tiempo')
 
 @section('content')
-<div class="bg-white dark:bg-slate-950 rounded-lg shadow p-4 text-sm">
+<div class="bg-white rounded-lg shadow p-4 text-sm">
     <form method="POST"
           action="{{ route('timewindows.store') }}"
           class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -135,7 +135,7 @@
             </select>
         </div>
 
-        {{-- Reabierto hasta (solo si se usa estado = reabierto) --}}
+        {{-- Reabierto hasta --}}
         <div>
             <label class="block text-[11px] text-gray-600 mb-1">
                 Reabierto hasta (opcional, solo si estado = reabierto)
