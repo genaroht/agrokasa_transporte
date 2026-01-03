@@ -4,7 +4,7 @@
 @section('header', 'Editar ventana de tiempo')
 
 @section('content')
-<div class="bg-white dark:bg-slate-950 rounded-lg shadow p-4 text-sm max-w-5xl">
+<div class="bg-white rounded-lg shadow p-4 text-sm max-w-5xl">
     <form method="POST"
           action="{{ route('timewindows.update', $timewindow) }}"
           class="grid grid-cols-1 md:grid-cols-3 gap-4">

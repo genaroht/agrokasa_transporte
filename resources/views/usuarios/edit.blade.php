@@ -4,7 +4,7 @@
 @section('header','Editar usuario')
 
 @section('content')
-<div class="bg-white dark:bg-slate-950 rounded-lg shadow p-4 text-sm">
+<div class="bg-white rounded-lg shadow p-4 text-sm">
     <form method="POST"
           action="{{ route('usuarios.update', $usuario) }}"
           class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -134,7 +134,7 @@
                     )->map(fn($v) => (int) $v);
                 @endphp
                 @foreach($roles as $rol)
-                    <label class="inline-flex items-center text-xs border rounded px-2 py-1 bg-gray-50 dark:bg-slate-900">
+                    <label class="inline-flex items-center text-xs border rounded px-2 py-1 bg-gray-50">
                         <input type="checkbox"
                                name="roles[]"
                                value="{{ $rol->id }}"
