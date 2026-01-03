@@ -401,9 +401,11 @@
                         <button type="button"
                                 class="p-2 rounded-full border border-gray-200 hover:bg-gray-100 transition"
                                 @click="toggleDarkMode()"
-                                title="Modo claro">
+                                title="Modo claro fijo">
+                            {{-- Ícono de sol fijo (solo decorativo) --}}
                             <svg viewBox="0 0 24 24" class="w-4 h-4">
-                                <path fill="currentColor" d="M12 4a1 1 0 011 1v1a1 1 0 01-2 0V5a1 1 0 011-1zm0 9a3 3 0 110-6 3 3 0 010 6zm7-3a1 1 0 011 1 1 1 0 01-1 1h-1a1 1 0 010-2h1zM6 11a1 1 0 000 2H5a1 1 0 010-2h1zm10.95 5.536a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM5.636 6.05a1 1 0 011.414 0l.707.708A1 1 0 016.343 8.17l-.707-.707a1 1 0 010-1.414zm0 11.314a1 1 0 010-1.414l.707-.707A1 1 0 017.757 16.96l-.707.707a1 1 0 01-1.414 0zM17.657 6.05a1 1 0 010 1.414l-.707.707A1 1 0 0115.536 6.76l.707-.708a1 1 0 011.414 0zM12 18a1 1 0 011 1v1a1 1 0 01-2 0v-1a1 1 0 011-1z"/>
+                                <path fill="currentColor"
+                                    d="M12 4a1 1 0 011 1v1a1 1 0 01-2 0V5a1 1 0 011-1zm0 9a3 3 0 110-6 3 3 0 010 6zm7-3a1 1 0 011 1 1 1 0 01-1 1h-1a1 1 0 010-2h1zM6 11a1 1 0 000 2H5a1 1 0 010-2h1zm10.95 5.536a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM5.636 6.05a1 1 0 011.414 0l.707.708A1 1 0 016.343 8.17l-.707-.707a1 1 0 010-1.414zm0 11.314a1 1 0 010-1.414l.707-.707A1 1 0 017.757 16.96l-.707.707a1 1 0 01-1.414 0zM17.657 6.05a1 1 0 010 1.414l-.707.707A1 1 0 0115.536 6.76l.707-.708a1 1 0 011.414 0zM12 18a1 1 0 011 1v1a1 1 0 01-2 0v-1a1 1 0 011-1z"/>
                             </svg>
                         </button>
 
@@ -668,8 +670,7 @@
 <script>
     function layoutState() {
         return {
-            // Siempre modo claro (darkMode solo como flag interno)
-            darkMode: false,
+            // Sólo reloj y menú móvil
             mobileSidebarOpen: false,
             now: new Date('{{ $now->format('Y-m-d H:i:s') }}'.replace(' ', 'T')),
 
@@ -679,8 +680,9 @@
                     this.now = new Date(this.now.getTime() + 1000);
                 }, 1000);
 
-                // Garantizamos modo claro
-                this.toggleDarkMode();
+                // Garantizar que NUNCA se aplique modo oscuro
+                localStorage.removeItem('ak_dark');
+                document.documentElement.classList.remove('dark');
             },
 
             get nowFormatted() {
@@ -696,8 +698,7 @@
             },
 
             toggleDarkMode() {
-                // Desactivamos por completo el modo oscuro
-                this.darkMode = false;
+                // Botón decorativo: por si alguien hace clic, limpiamos cualquier rastro viejo
                 localStorage.removeItem('ak_dark');
                 document.documentElement.classList.remove('dark');
             }
