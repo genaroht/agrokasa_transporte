@@ -3,15 +3,23 @@
       x-data="layoutState()"
       x-init="init()">
 <head>
-
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <title>@yield('title','AGROKASA Transporte')</title>
 
     {{-- CSRF para formularios web y JS --}}
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    {{-- Forzar esquema de color claro para navegadores --}}
+    <meta name="color-scheme" content="light">
 
-    {{-- TailwindCSS por CDN (sin Vite) --}}
+    {{-- Config Tailwind: solo modo oscuro por clase (no por preferencia del sistema) --}}
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+        };
+    </script>
+    {{-- TailwindCSS por CDN --}}
     <script src="https://cdn.tailwindcss.com"></script>
 
     {{-- Alpine.js para interactividad ligera --}}
@@ -23,8 +31,12 @@
             --primary-dark: #00592c;
             --primary-soft: #e1f3e8;
         }
+        [x-cloak] {
+            display: none !important;
+        }
     </style>
 </head>
+
 @php
     /** @var \App\Models\User|null $user */
     $user = auth()->user();
@@ -68,21 +80,21 @@
     }
 @endphp
 
-<body class="min-h-screen bg-gray-50 text-gray-900 dark:bg-slate-900 dark:text-slate-100">
+<body class="min-h-screen bg-gray-50 text-gray-900">
 
 @if(!$user)
     {{-- =========================================================
-       LAYOUT PARA INVITADOS
+       LAYOUT PARA INVITADOS (LOGIN)
        ========================================================= --}}
-    <div class="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-slate-900 px-4">
-        <div class="w-full max-w-md bg-white dark:bg-slate-950 shadow-lg rounded-xl p-6 space-y-4">
+    <div class="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div class="w-full max-w-md bg-white shadow-lg rounded-xl p-6 space-y-4">
             <div class="flex items-center gap-3 mb-2">
                 <div class="w-10 h-10 rounded-full bg-[var(--primary)] flex items-center justify-center text-white font-bold">
                     AK
                 </div>
                 <div>
                     <div class="text-sm font-semibold">AGROKASA</div>
-                    <div class="text-[11px] text-gray-500 dark:text-slate-400">Transporte de personal</div>
+                    <div class="text-[11px] text-gray-500">Transporte de personal</div>
                 </div>
             </div>
 
@@ -96,16 +108,16 @@
        ========================================================= --}}
     <div class="flex h-screen">
 
-        {{-- SIDEBAR --}}
-        <aside class="hidden md:flex md:flex-col w-60 bg-white dark:bg-slate-950 border-r border-gray-200 dark:border-slate-800">
-            <div class="h-16 flex items-center px-4 border-b border-gray-200 dark:border-slate-800">
+        {{-- SIDEBAR ESCRITORIO --}}
+        <aside class="hidden md:flex md:flex-col w-60 bg-white border-r border-gray-200">
+            <div class="h-16 flex items-center px-4 border-b border-gray-200">
                 <div class="flex items-center gap-2">
                     <div class="w-8 h-8 rounded-full bg-[var(--primary)] flex items-center justify-center text-white font-bold text-sm">
                         AK
                     </div>
                     <div class="leading-tight">
                         <div class="font-semibold text-sm">AGROKASA</div>
-                        <div class="text-[11px] text-gray-500 dark:text-slate-400">Transporte de personal</div>
+                        <div class="text-[11px] text-gray-500">Transporte de personal</div>
                     </div>
                 </div>
             </div>
@@ -113,7 +125,7 @@
             <nav class="flex-1 overflow-y-auto py-3 text-sm space-y-1">
                 {{-- DASHBOARD --}}
                 <a href="{{ route('dashboard') }}"
-                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                    @if(request()->routeIs('dashboard')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                     <span class="w-4 h-4">
                         <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -124,13 +136,12 @@
                 </a>
 
                 {{-- PROGRAMACIONES --}}
-                <div class="mt-2 px-4 text-[11px] uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                <div class="mt-2 px-4 text-[11px] uppercase tracking-wide text-gray-400">
                     Programaciones
                 </div>
 
-                {{-- Listado de programaciones --}}
                 <a href="{{ route('programaciones.index') }}"
-                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                    @if(request()->routeIs('programaciones.index')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                     <span class="w-4 h-4">
                         <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -143,9 +154,8 @@
                     <span>Programaciones</span>
                 </a>
 
-                {{-- Resumen Paradero x Horario --}}
                 <a href="{{ route('programaciones.resumen.paradero-horario') }}"
-                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                    @if(request()->routeIs('programaciones.resumen.paradero-horario')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                     <span class="w-4 h-4">
                         <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -155,9 +165,8 @@
                     <span>Resumen Paradero x Horario</span>
                 </a>
 
-                {{-- Resumen Ruta x Paradero --}}
                 <a href="{{ route('programaciones.resumen.ruta-paradero') }}"
-                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                    @if(request()->routeIs('programaciones.resumen.ruta-paradero')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                     <span class="w-4 h-4">
                         <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -170,10 +179,9 @@
                     <span>Resumen Ruta x Paradero</span>
                 </a>
 
-                {{-- Reporte Ruta / Lote / Comedor --}}
                 @if(\Illuminate\Support\Facades\Route::has('programaciones.reporte_ruta_lote_com'))
                     <a href="{{ route('programaciones.reporte_ruta_lote_com') }}"
-                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                        @if(request()->routeIs('programaciones.reporte_ruta_lote_com')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                         <span class="w-4 h-4">
                             <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -186,14 +194,13 @@
                 @endif
 
                 {{-- CATÁLOGOS --}}
-                <div class="mt-3 px-4 text-[11px] uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                <div class="mt-3 px-4 text-[11px] uppercase tracking-wide text-gray-400">
                     Catálogos
                 </div>
 
-                {{-- HORARIOS --}}
                 @if($puedeVerHorarios)
                     <a href="{{ route('catalogos.horarios.index') }}"
-                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                        @if(request()->routeIs('catalogos.horarios.*')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                         <span class="w-4 h-4">
                             <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -205,9 +212,8 @@
                     </a>
                 @endif
 
-                {{-- Paraderos --}}
                 <a href="{{ route('catalogos.paraderos.index') }}"
-                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                    @if(request()->routeIs('catalogos.paraderos.*')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                     <span class="w-4 h-4">
                         <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -217,9 +223,8 @@
                     <span>Paraderos</span>
                 </a>
 
-                {{-- Rutas --}}
                 <a href="{{ route('catalogos.rutas.index') }}"
-                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                    @if(request()->routeIs('catalogos.rutas.*')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                     <span class="w-4 h-4">
                         <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -229,9 +234,8 @@
                     <span>Rutas</span>
                 </a>
 
-                {{-- Lugares --}}
                 <a href="{{ route('catalogos.lugares.index') }}"
-                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                    @if(request()->routeIs('catalogos.lugares.*')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                     <span class="w-4 h-4">
                         <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor">
@@ -242,9 +246,9 @@
                     </span>
                     <span>Lugares</span>
                 </a>
-                {{-- Áreas --}}
+
                 <a href="{{ route('catalogos.areas.index') }}"
-                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                   class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                    @if(request()->routeIs('catalogos.areas.*')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                     <span class="w-4 h-4">
                         <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -255,15 +259,14 @@
                     <span>Áreas</span>
                 </a>
 
-                {{-- SEGURIDAD / SUCURSALES / AUDITORÍA (Admin General) --}}
+                {{-- SEGURIDAD / SUCURSALES / AUDITORÍA (solo Admin General) --}}
                 @if($isAdminGral)
-                    <div class="mt-3 px-4 text-[11px] uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                    <div class="mt-3 px-4 text-[11px] uppercase tracking-wide text-gray-400">
                         Seguridad
                     </div>
 
-                    {{-- Usuarios --}}
                     <a href="{{ route('usuarios.index') }}"
-                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                        @if(request()->routeIs('usuarios.*')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                         <span class="w-4 h-4">
                             <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -274,9 +277,8 @@
                         <span>Usuarios</span>
                     </a>
 
-                    {{-- Roles --}}
                     <a href="{{ route('roles.index') }}"
-                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                        @if(request()->routeIs('roles.*')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                         <span class="w-4 h-4">
                             <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -286,9 +288,8 @@
                         <span>Roles</span>
                     </a>
 
-                    {{-- Sucursales --}}
                     <a href="{{ route('sucursales.index') }}"
-                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                        @if(request()->routeIs('sucursales.*')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                         <span class="w-4 h-4">
                             <svg viewBox="0 0 24 24" class="w-4 h-4" fill="none" stroke="currentColor">
@@ -299,11 +300,11 @@
                         <span>Sucursales</span>
                     </a>
 
-                    <div class="mt-3 px-4 text-[11px] uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                    <div class="mt-3 px-4 text-[11px] uppercase tracking-wide text-gray-400">
                         Ventanas de tiempo
                     </div>
                     <a href="{{ route('timewindows.index') }}"
-                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                        @if(request()->routeIs('timewindows.*')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                         <span class="w-4 h-4">
                             <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -313,11 +314,11 @@
                         <span>Ventanas de tiempo</span>
                     </a>
 
-                    <div class="mt-3 px-4 text-[11px] uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                    <div class="mt-3 px-4 text-[11px] uppercase tracking-wide text-gray-400">
                         Auditoría
                     </div>
                     <a href="{{ route('audit.index') }}"
-                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 dark:hover:bg-slate-800 rounded-r-full transition
+                       class="flex items-center gap-2 px-4 py-2 hover:bg-gray-100 rounded-r-full transition
                        @if(request()->routeIs('audit.*')) bg-[var(--primary-soft)] text-[var(--primary)] font-semibold @endif">
                         <span class="w-4 h-4">
                             <svg viewBox="0 0 24 24" class="w-4 h-4">
@@ -329,7 +330,7 @@
                 @endif
             </nav>
 
-            <div class="border-t border-gray-200 dark:border-slate-800 p-3 text-[11px] text-gray-400 dark:text-slate-500">
+            <div class="border-t border-gray-200 p-3 text-[11px] text-gray-400">
                 &copy; {{ date('Y') }} AGROKASA
             </div>
         </aside>
@@ -337,9 +338,9 @@
         {{-- CONTENIDO PRINCIPAL --}}
         <div class="flex-1 flex flex-col">
             {{-- TOPBAR --}}
-            <header class="h-16 flex items-center justify-between px-3 md:px-6 bg-white/90 dark:bg-slate-950/90 backdrop-blur border-b border-gray-200 dark:border-slate-800">
+            <header class="h-16 flex items-center justify-between px-3 md:px-6 bg-white/90 backdrop-blur border-b border-gray-200">
                 <div class="flex items-center gap-2 md:gap-4">
-                    <button class="md:hidden p-2 rounded-md hover:bg-gray-100 dark:hover:bg-slate-800"
+                    <button class="md:hidden p-2 rounded-md hover:bg-gray-100"
                             @click="mobileSidebarOpen = !mobileSidebarOpen">
                         <svg viewBox="0 0 24 24" class="w-5 h-5">
                             <path fill="currentColor" d="M3 6h18v2H3V6zm0 5h18v2H3v-2zm0 5h18v2H3v-2z"/>
@@ -348,7 +349,7 @@
 
                     <div>
                         <div class="font-semibold text-sm md:text-base">@yield('header','Panel de transporte')</div>
-                        <div class="text-[11px] text-gray-500 dark:text-slate-400 hidden sm:block">
+                        <div class="text-[11px] text-gray-500 hidden sm:block">
                             Gestión de transporte de personal y paraderos
                         </div>
                     </div>
@@ -357,7 +358,7 @@
                 <div class="flex items-center gap-4 text-[11px] md:text-xs">
                     {{-- HORA SERVIDOR --}}
                     <div class="hidden sm:flex flex-col items-end">
-                        <div class="text-[10px] uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                        <div class="text-[10px] uppercase tracking-wide text-gray-400">
                             Hora servidor ({{ $tz }})
                         </div>
                         <div class="font-mono text-[11px]" x-text="nowFormatted"></div>
@@ -365,7 +366,7 @@
 
                     {{-- SUCURSAL --}}
                     <div class="flex flex-col items-end">
-                        <div class="text-[10px] uppercase tracking-wide text-gray-400 dark:text-slate-500">
+                        <div class="text-[10px] uppercase tracking-wide text-gray-400">
                             Sucursal
                         </div>
 
@@ -377,7 +378,7 @@
                             <form method="POST" action="{{ route('sucursales.cambiar') }}">
                                 @csrf
                                 <select name="sucursal_id"
-                                        class="border border-gray-200 dark:border-slate-700 bg-gray-50 dark:bg-slate-900 rounded px-2 py-1 text-[11px]"
+                                        class="border border-gray-200 bg-gray-50 rounded px-2 py-1 text-[11px]"
                                         onchange="this.form.submit()">
                                     @foreach($sucursalesTop as $s)
                                         <option value="{{ $s->id }}"
@@ -394,22 +395,16 @@
                         @endif
                     </div>
 
-                    {{-- PERFIL / DARK MODE / LOGOUT --}}
+                    {{-- PERFIL / "MODO" / LOGOUT --}}
                     <div class="flex items-center gap-3">
+                        {{-- Botón que antes cambiaba modo: ahora solo asegura claro --}}
                         <button type="button"
-                                class="p-2 rounded-full border border-gray-200 dark:border-slate-700 hover:bg-gray-100 dark:hover:bg-slate-800 transition"
+                                class="p-2 rounded-full border border-gray-200 hover:bg-gray-100 transition"
                                 @click="toggleDarkMode()"
-                                :title="darkMode ? 'Modo claro' : 'Modo oscuro'">
-                            <template x-if="!darkMode">
-                                <svg viewBox="0 0 24 24" class="w-4 h-4">
-                                    <path fill="currentColor" d="M12 4a1 1 0 011 1v1a1 1 0 01-2 0V5a1 1 0 011-1zm0 9a3 3 0 110-6 3 3 0 010 6zm7-3a1 1 0 011 1 1 1 0 01-1 1h-1a1 1 0 010-2h1zM6 11a1 1 0 000 2H5a1 1 0 010-2h1zm10.95 5.536a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM5.636 6.05a1 1 0 011.414 0l.707.708A1 1 0 016.343 8.17l-.707-.707a1 1 0 010-1.414zm0 11.314a1 1 0 010-1.414l.707-.707A1 1 0 017.757 16.96l-.707.707a1 1 0 01-1.414 0zM17.657 6.05a1 1 0 010 1.414l-.707.707A1 1 0 0115.536 6.76l.707-.708a1 1 0 011.414 0zM12 18a1 1 0 011 1v1a1 1 0 01-2 0v-1a1 1 0 011-1z"/>
-                                </svg>
-                            </template>
-                            <template x-if="darkMode">
-                                <svg viewBox="0 0 24 24" class="w-4 h-4">
-                                    <path fill="currentColor" d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
-                                </svg>
-                            </template>
+                                title="Modo claro">
+                            <svg viewBox="0 0 24 24" class="w-4 h-4">
+                                <path fill="currentColor" d="M12 4a1 1 0 011 1v1a1 1 0 01-2 0V5a1 1 0 011-1zm0 9a3 3 0 110-6 3 3 0 010 6zm7-3a1 1 0 011 1 1 1 0 01-1 1h-1a1 1 0 010-2h1zM6 11a1 1 0 000 2H5a1 1 0 010-2h1zm10.95 5.536a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414zM5.636 6.05a1 1 0 011.414 0l.707.708A1 1 0 016.343 8.17l-.707-.707a1 1 0 010-1.414zm0 11.314a1 1 0 010-1.414l.707-.707A1 1 0 017.757 16.96l-.707.707a1 1 0 01-1.414 0zM17.657 6.05a1 1 0 010 1.414l-.707.707A1 1 0 0115.536 6.76l.707-.708a1 1 0 011.414 0zM12 18a1 1 0 011 1v1a1 1 0 01-2 0v-1a1 1 0 011-1z"/>
+                            </svg>
                         </button>
 
                         <div class="flex items-center gap-2">
@@ -417,7 +412,7 @@
                                 <div class="text-[11px] font-semibold">
                                     {{ $user->nombre_completo ?? $user->codigo }}
                                 </div>
-                                <div class="text-[10px] text-gray-500 dark:text-slate-400">
+                                <div class="text-[10px] text-gray-500">
                                     {{ $mainRole }} • {{ $user->codigo }}
                                 </div>
                             </div>
@@ -425,7 +420,7 @@
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
                                 <button type="submit"
-                                        class="text-[11px] px-2 py-1 rounded border border-gray-200 dark:border-slate-700 hover:bg-red-50 hover:text-red-700 dark:hover:bg-red-900/40 transition">
+                                        class="text-[11px] px-2 py-1 rounded border border-gray-200 hover:bg-red-50 hover:text-red-700 transition">
                                     Salir
                                 </button>
                             </form>
@@ -435,7 +430,7 @@
             </header>
 
             {{-- CONTENIDO --}}
-            <main class="flex-1 overflow-y-auto bg-gray-50/60 dark:bg-slate-900/60">
+            <main class="flex-1 overflow-y-auto bg-gray-50/60">
                 <div class="max-w-7xl mx-auto p-3 md:p-6 space-y-3 md:space-y-4">
                     @if(session('status'))
                         <div class="bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm px-3 py-2 rounded flex items-center gap-2">
@@ -465,211 +460,215 @@
         </div>
     </div>
 
-{{-- PANEL LATERAL MÓVIL --}}
-<div
-    x-cloak
-    x-show="mobileSidebarOpen"
-    x-transition.opacity
-    class="fixed inset-0 z-40 flex md:hidden"
-    role="dialog"
-    aria-modal="true"
->
-    {{-- Fondo oscuro --}}
-    <div class="fixed inset-0 bg-black/40" @click="mobileSidebarOpen = false"></div>
+    {{-- PANEL LATERAL MÓVIL --}}
+    <div
+        x-cloak
+        x-show="mobileSidebarOpen"
+        x-transition.opacity
+        class="fixed inset-0 z-40 flex md:hidden"
+        role="dialog"
+        aria-modal="true"
+    >
+        {{-- Fondo oscuro --}}
+        <div class="fixed inset-0 bg-black/40" @click="mobileSidebarOpen = false"></div>
 
-    {{-- Panel lateral --}}
-    <div class="relative flex w-full max-w-xs">
-        <div class="flex flex-col w-full h-full bg-white shadow-xl">
-            {{-- Header del menú móvil --}}
-            <div class="flex items-center justify-between h-14 px-4 border-b border-slate-200">
-                <p class="text-xs font-semibold tracking-wide text-slate-500 uppercase">
-                    Menú
-                </p>
-                <button
-                    type="button"
-                    class="p-2 rounded-md text-slate-500 hover:bg-slate-100"
-                    @click="mobileSidebarOpen = false"
-                >
-                    Cerrar
-                </button>
-            </div>
-
-            {{-- Contenido del menú móvil --}}
-            <div class="flex-1 overflow-y-auto py-4 text-sm">
-
-                {{-- DASHBOARD --}}
-                <div class="px-4 mb-3">
-                    <a
-                        href="{{ route('dashboard') }}"
-                        class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                               {{ request()->routeIs('dashboard') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+        {{-- Panel lateral --}}
+        <div class="relative flex w-full max-w-xs">
+            <div class="flex flex-col w-full h-full bg-white shadow-xl">
+                {{-- Header del menú móvil --}}
+                <div class="flex items-center justify-between h-14 px-4 border-b border-slate-200">
+                    <p class="text-xs font-semibold tracking-wide text-slate-500 uppercase">
+                        Menú
+                    </p>
+                    <button
+                        type="button"
+                        class="p-2 rounded-md text-slate-500 hover:bg-slate-100"
                         @click="mobileSidebarOpen = false"
                     >
-                        Dashboard
-                    </a>
+                        Cerrar
+                    </button>
                 </div>
 
-                {{-- PROGRAMACIONES --}}
-                <div class="mt-4">
-                    <p class="px-7 mb-1 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
-                        Programaciones
-                    </p>
-                    <div class="space-y-1 px-4">
+                {{-- Contenido del menú móvil --}}
+                <div class="flex-1 overflow-y-auto py-4 text-sm">
+
+                    {{-- DASHBOARD --}}
+                    <div class="px-4 mb-3">
                         <a
-                            href="{{ route('programaciones.index') }}"
+                            href="{{ route('dashboard') }}"
                             class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('programaciones.index') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                   {{ request()->routeIs('dashboard') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
                             @click="mobileSidebarOpen = false"
                         >
+                            Dashboard
+                        </a>
+                    </div>
+
+                    {{-- PROGRAMACIONES --}}
+                    <div class="mt-4">
+                        <p class="px-7 mb-1 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
                             Programaciones
-                        </a>
+                        </p>
+                        <div class="space-y-1 px-4">
+                            <a
+                                href="{{ route('programaciones.index') }}"
+                                class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                       {{ request()->routeIs('programaciones.index') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                @click="mobileSidebarOpen = false"
+                            >
+                                Programaciones
+                            </a>
 
-                        <a
-                            href="{{ route('programaciones.resumen.paradero-horario') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('programaciones.resumen.paradero-horario') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Resumen Paradero x Horario
-                        </a>
+                            <a
+                                href="{{ route('programaciones.resumen.paradero-horario') }}"
+                                class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                       {{ request()->routeIs('programaciones.resumen.paradero-horario') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                @click="mobileSidebarOpen = false"
+                            >
+                                Resumen Paradero x Horario
+                            </a>
 
-                        <a
-                            href="{{ route('programaciones.resumen.ruta-paradero') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('programaciones.resumen.ruta-paradero') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Resumen Ruta x Paradero
-                        </a>
+                            <a
+                                href="{{ route('programaciones.resumen.ruta-paradero') }}"
+                                class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                       {{ request()->routeIs('programaciones.resumen.ruta-paradero') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                @click="mobileSidebarOpen = false"
+                            >
+                                Resumen Ruta x Paradero
+                            </a>
 
-                        <a
-                            href="{{ route('programaciones.reporte_ruta_lote_com') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('programaciones.reporte_ruta_lote_com') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Ruta / Lote / Comedor
-                        </a>
+                            <a
+                                href="{{ route('programaciones.reporte_ruta_lote_com') }}"
+                                class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                       {{ request()->routeIs('programaciones.reporte_ruta_lote_com') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                @click="mobileSidebarOpen = false"
+                            >
+                                Ruta / Lote / Comedor
+                            </a>
+                        </div>
                     </div>
-                </div>
 
-                {{-- CATÁLOGOS --}}
-                <div class="mt-6">
-                    <p class="px-7 mb-1 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
-                        Catálogos
-                    </p>
-                    <div class="space-y-1 px-4">
-                        <a
-                            href="{{ route('catalogos.horarios.index') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('catalogos.horarios.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Horarios
-                        </a>
+                    {{-- CATÁLOGOS --}}
+                    <div class="mt-6">
+                        <p class="px-7 mb-1 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                            Catálogos
+                        </p>
+                        <div class="space-y-1 px-4">
+                            @if($puedeVerHorarios)
+                                <a
+                                    href="{{ route('catalogos.horarios.index') }}"
+                                    class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                           {{ request()->routeIs('catalogos.horarios.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                    @click="mobileSidebarOpen = false"
+                                >
+                                    Horarios
+                                </a>
+                            @endif
 
-                        <a
-                            href="{{ route('catalogos.paraderos.index') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('catalogos.paraderos.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Paraderos
-                        </a>
+                            <a
+                                href="{{ route('catalogos.paraderos.index') }}"
+                                class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                       {{ request()->routeIs('catalogos.paraderos.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                @click="mobileSidebarOpen = false"
+                            >
+                                Paraderos
+                            </a>
 
-                        <a
-                            href="{{ route('catalogos.rutas.index') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('catalogos.rutas.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Rutas
-                        </a>
+                            <a
+                                href="{{ route('catalogos.rutas.index') }}"
+                                class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                       {{ request()->routeIs('catalogos.rutas.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                @click="mobileSidebarOpen = false"
+                            >
+                                Rutas
+                            </a>
 
-                        <a
-                            href="{{ route('catalogos.lugares.index') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('catalogos.lugares.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Lugares
-                        </a>
+                            <a
+                                href="{{ route('catalogos.lugares.index') }}"
+                                class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                       {{ request()->routeIs('catalogos.lugares.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                @click="mobileSidebarOpen = false"
+                            >
+                                Lugares
+                            </a>
 
-                        <a
-                            href="{{ route('catalogos.areas.index') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('catalogos.areas.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Áreas
-                        </a>
+                            <a
+                                href="{{ route('catalogos.areas.index') }}"
+                                class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                       {{ request()->routeIs('catalogos.areas.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                @click="mobileSidebarOpen = false"
+                            >
+                                Áreas
+                            </a>
+                        </div>
                     </div>
+
+                    {{-- SEGURIDAD / AUDITORÍA (móvil) --}}
+                    @if($isAdminGral)
+                        <div class="mt-6 mb-4">
+                            <p class="px-7 mb-1 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
+                                Seguridad
+                            </p>
+                            <div class="space-y-1 px-4">
+                                <a
+                                    href="{{ route('usuarios.index') }}"
+                                    class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                           {{ request()->routeIs('usuarios.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                    @click="mobileSidebarOpen = false"
+                                >
+                                    Usuarios
+                                </a>
+
+                                <a
+                                    href="{{ route('roles.index') }}"
+                                    class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                           {{ request()->routeIs('roles.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                    @click="mobileSidebarOpen = false"
+                                >
+                                    Roles
+                                </a>
+
+                                <a
+                                    href="{{ route('sucursales.index') }}"
+                                    class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                           {{ request()->routeIs('sucursales.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                    @click="mobileSidebarOpen = false"
+                                >
+                                    Sucursales
+                                </a>
+
+                                <a
+                                    href="{{ route('timewindows.index') }}"
+                                    class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                           {{ request()->routeIs('timewindows.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                    @click="mobileSidebarOpen = false"
+                                >
+                                    Ventanas de tiempo
+                                </a>
+
+                                <a
+                                    href="{{ route('audit.index') }}"
+                                    class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
+                                           {{ request()->routeIs('audit.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
+                                    @click="mobileSidebarOpen = false"
+                                >
+                                    Auditoría
+                                </a>
+                            </div>
+                        </div>
+                    @endif
+
                 </div>
-
-                {{-- SEGURIDAD --}}
-                <div class="mt-6 mb-4">
-                    <p class="px-7 mb-1 text-[11px] font-semibold tracking-wide text-slate-400 uppercase">
-                        Seguridad
-                    </p>
-                    <div class="space-y-1 px-4">
-                        <a
-                            href="{{ route('usuarios.index') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('usuarios.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Usuarios
-                        </a>
-
-                        <a
-                            href="{{ route('roles.index') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('roles.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Roles
-                        </a>
-
-                        <a
-                            href="{{ route('sucursales.index') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('sucursales.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Sucursales
-                        </a>
-
-                        <a
-                            href="{{ route('timewindows.index') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('timewindows.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Ventanas de tiempo
-                        </a>
-
-                        <a
-                            href="{{ route('auditoria.index') }}"
-                            class="block rounded-md px-3 py-2 text-[13px] font-medium transition-colors
-                                   {{ request()->routeIs('auditoria.*') ? 'bg-emerald-100 text-emerald-700' : 'text-slate-800 hover:bg-slate-100 hover:text-emerald-700' }}"
-                            @click="mobileSidebarOpen = false"
-                        >
-                            Auditoría
-                        </a>
-                    </div>
-                </div>
-
             </div>
         </div>
     </div>
-</div>
-{{-- FIN PANEL LATERAL MÓVIL --}}
-
+    {{-- FIN PANEL LATERAL MÓVIL --}}
+@endif
 
 <script>
     function layoutState() {
         return {
-            // Siempre modo claro
+            // Siempre modo claro (darkMode solo como flag interno)
             darkMode: false,
             mobileSidebarOpen: false,
             now: new Date('{{ $now->format('Y-m-d H:i:s') }}'.replace(' ', 'T')),
@@ -680,9 +679,8 @@
                     this.now = new Date(this.now.getTime() + 1000);
                 }, 1000);
 
-                // Aseguramos que no quede ninguna preferencia de modo oscuro guardada
-                localStorage.removeItem('ak_dark');
-                document.documentElement.classList.remove('dark');
+                // Garantizamos modo claro
+                this.toggleDarkMode();
             },
 
             get nowFormatted() {
