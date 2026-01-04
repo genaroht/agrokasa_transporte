@@ -19,19 +19,35 @@ use Illuminate\Support\Facades\Hash;
 class AuthController extends Controller
 {
     /**
-     * Determina a qué ruta redirigir a un usuario según su rol.
-     * Aquí decides el "home" de cada perfil.
+     * Determina a qué ruta redirigir a un usuario según su ROL.
+     *
+     * Roles definidos:
+     * - admin_general   -> ve y gestiona todas las sucursales
+     * - admin_sucursal  -> gestiona todo pero SOLO su sucursal
+     * - operador        -> arma programaciones dentro de ventanas de tiempo
+     * - lectura         -> solo reportes y dashboard (sin editar)
      */
     protected function redirectPathFor(User $user): string
     {
-        // Si es Admin General -> va al dashboard
+        // 1) Admin General -> dashboard
         if (method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral()) {
             return route('dashboard');
         }
 
-        // Para el resto de usuarios, por ejemplo, que vayan a Programaciones
-        // Cambia esta ruta si quieres otro "home" para usuarios normales.
-        return route('programaciones.index');
+        // 2) Admin de sucursal u Operador -> home en Programaciones
+        if (method_exists($user, 'hasRole')) {
+            if ($user->hasRole('admin_sucursal') || $user->hasRole('operador')) {
+                return route('programaciones.index');
+            }
+
+            // 3) Solo lectura -> dashboard (solo ver, sin editar)
+            if ($user->hasRole('lectura')) {
+                return route('dashboard');
+            }
+        }
+
+        // 4) Fallback seguro (por si algún usuario no tiene rol asignado bien)
+        return route('dashboard');
     }
 
     // ====== LOGIN WEB ======
@@ -96,9 +112,11 @@ class AuthController extends Controller
                 'user_agent'     => $request->userAgent(),
             ]);
 
-            // 🔁 Redirección según rol
+            // Redirección según ROL (no por permisos)
             $redirectTo = $this->redirectPathFor($user);
 
+            // Usamos intended por si venía de una ruta protegida,
+            // pero con fallback a la ruta calculada.
             return redirect()->intended($redirectTo);
         }
 

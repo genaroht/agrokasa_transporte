@@ -11,14 +11,14 @@ use Illuminate\Support\Facades\Route;
 class RouteServiceProvider extends ServiceProvider
 {
     /**
-     * The path to the "home" route for your application.
-     *
-     * Typically, users are redirected here after authentication.
+     * Ruta HOME de la aplicación.
+     * Aquí es donde RedirectIfAuthenticated manda a un usuario
+     * que intenta entrar a /login estando ya logueado.
      */
-    public const HOME = '/home';
+    public const HOME = '/dashboard'; // 👈 IMPORTANTE: apunta al dashboard
 
     /**
-     * Define your route model bindings, pattern filters, etc.
+     * Define tus rutas.
      */
     public function boot(): void
     {
@@ -35,7 +35,7 @@ class RouteServiceProvider extends ServiceProvider
     }
 
     /**
-     * Configura los límites de peticiones (rate limiting) para la API.
+     * Rate limiting.
      */
     protected function configureRateLimiting(): void
     {

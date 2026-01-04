@@ -89,12 +89,7 @@ class SucursalMiddleware
         // 2) La dejamos también disponible para controladores
         $request->attributes->set('sucursalActual', $sucursal);
 
-        // 3) TRUCO IMPORTANTE:
-        //    Sobrescribimos el atributo sucursal_id del usuario EN MEMORIA
-        //    (NO guardamos en BD) para que cualquier código que haga:
-        //      $user = auth()->user();
-        //      $user->sucursal_id
-        //    obtenga SIEMPRE la sucursal activa.
+        // 3) Sobrescribimos el atributo sucursal_id del usuario EN MEMORIA
         $user->setAttribute('sucursal_id', $sucursal->id);
 
         return $next($request);
@@ -106,6 +101,9 @@ class SucursalMiddleware
             return response()->json(['message' => $message], 403);
         }
 
-        return redirect()->route('dashboard')->withErrors($message);
+        // ⚠️ CLAVE PARA EVITAR BUCLES:
+        // NADA de redirect()->route('dashboard') ni redirect()->back().
+        // Mostramos directamente un 403 con el mensaje.
+        abort(403, $message);
     }
 }

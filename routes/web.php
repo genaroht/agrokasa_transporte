@@ -37,6 +37,12 @@ Route::get('/', function () {
         : redirect()->route('login');
 });
 
+// Si algún middleware viejo todavía usa /home, lo redirigimos al dashboard
+Route::get('/home', function () {
+    return redirect()->route('dashboard');
+});
+
+
 /*
 |--------------------------------------------------------------------------
 | Rutas de autenticación (guest)
@@ -77,11 +83,12 @@ Route::middleware('auth')->group(function () {
     | Dashboard
     |--------------------------------------------------------------------------
     |
-    | Aquí permitimos acceso a usuarios con permiso ver_dashboard
-    | O a quienes gestionan programaciones (Operador / Planificador).
-    |
+    | Acceso:
+    | - admin_general
+    | - admin_sucursal
+    | - operador      (ver_dashboard en mapping)
+    | - lectura       (ver_dashboard en mapping)
     */
-
     Route::get('/dashboard', [DashboardController::class, 'index'])
         ->name('dashboard')
         ->middleware(['sucursal', 'permission:ver_dashboard|gestionar_programaciones']);
@@ -185,9 +192,11 @@ Route::middleware('auth')->group(function () {
         | Catálogos
         |--------------------------------------------------------------------------
         |
-        | Antes: solo 'permission:gestionar_catalogos'
-        | Ahora: también si tiene 'gestionar_programaciones' (Operador / Planificador).
-        |
+        | Acceso:
+        | - admin_general         (pasa todo)
+        | - admin_sucursal        (pasa por '*')
+        | - operador              (gestionar_catalogos en mapping)
+        | - lectura               NO pasa
         */
 
         Route::prefix('catalogos')->name('catalogos.')->group(function () {
@@ -201,11 +210,9 @@ Route::middleware('auth')->group(function () {
                 ->middleware('permission:gestionar_catalogos|gestionar_programaciones');
 
             Route::resource('lugares', LugarController::class)
-                ->parameters([
-                    'lugares' => 'lugar',
-                ])
+                ->parameters(['lugares' => 'lugar'])
                 ->names('lugares')
-                ->except(['show']); // Lugares ya era accesible sin permiso específico
+                ->except(['show']); // Lugares accesible sin permiso específico
 
             Route::resource('paraderos', ParaderoController::class)
                 ->except(['show'])
@@ -224,11 +231,16 @@ Route::middleware('auth')->group(function () {
         |--------------------------------------------------------------------------
         | Programaciones
         |--------------------------------------------------------------------------
+        |
+        | - admin_general     → todo
+        | - admin_sucursal    → todo en SU sucursal (por SucursalMiddleware)
+        | - operador          → programar y ver
+        | - lectura           → solo ver listados / reportes
         */
 
         Route::prefix('programaciones')->name('programaciones.')->group(function () {
 
-            // 1) RUTAS DE REPORTES
+            // 1) RUTAS DE REPORTES (solo ver Reportes/Resúmenes)
             Route::get('/resumen/paradero-horario', [ProgramacionController::class, 'resumenParaderoHorario'])
                 ->name('resumen.paradero-horario')
                 ->middleware('permission:ver_reportes');
@@ -241,11 +253,21 @@ Route::middleware('auth')->group(function () {
                 ->name('resumen.ruta-paradero')
                 ->middleware('permission:ver_reportes');
 
-            // 2) LISTADO + CREAR
+            // 2) LISTADO
             Route::get('/', [ProgramacionController::class, 'index'])
                 ->name('index')
                 ->middleware('permission:gestionar_programaciones|ver_reportes');
 
+            // 2B) CAPTURA RÁPIDA POR PARADERO (solo programar)
+            Route::get('/captura-rapida', [ProgramacionController::class, 'capturaRapida'])
+                ->name('captura-rapida')
+                ->middleware('permission:gestionar_programaciones');
+
+            Route::post('/captura-rapida/guardar', [ProgramacionController::class, 'guardarCapturaRapida'])
+                ->name('captura-rapida.guardar')
+                ->middleware(['permission:gestionar_programaciones', 'time.window']);
+
+            // 3) CREAR PROGRAMACIÓN MANUAL
             Route::get('/crear', [ProgramacionController::class, 'create'])
                 ->name('create')
                 ->middleware('permission:gestionar_programaciones');
@@ -258,16 +280,7 @@ Route::middleware('auth')->group(function () {
                 ->name('update.cabecera')
                 ->middleware(['role:admin_general', 'time.window']);
 
-            // 2B) CAPTURA RÁPIDA POR PARADERO
-            Route::get('/captura-rapida', [ProgramacionController::class, 'capturaRapida'])
-                ->name('captura-rapida')
-                ->middleware('permission:gestionar_programaciones');
-
-            Route::post('/captura-rapida/guardar', [ProgramacionController::class, 'guardarCapturaRapida'])
-                ->name('captura-rapida.guardar')
-                ->middleware(['permission:gestionar_programaciones', 'time.window']);
-
-            // 3) RUTAS CON ID
+            // 4) RUTAS CON ID (editar/ver/cerrar/reabrir/eliminar)
             Route::get('/{programacion}/editar', [ProgramacionController::class, 'edit'])
                 ->name('edit')
                 ->middleware('permission:gestionar_programaciones|ver_reportes');
@@ -288,12 +301,13 @@ Route::middleware('auth')->group(function () {
                 ->name('reabrir')
                 ->middleware(['permission:gestionar_programaciones', 'time.window']);
 
-            // 4) VER PROGRAMACIÓN
+
+            // 5) VER PROGRAMACIÓN (detalle)
             Route::get('/{programacion}', [ProgramacionController::class, 'show'])
                 ->name('show')
                 ->middleware('permission:gestionar_programaciones|ver_reportes');
 
-            // 5) ELIMINAR
+            // 6) ELIMINAR
             Route::delete('/{programacion}', [ProgramacionController::class, 'destroy'])
                 ->name('destroy')
                 ->middleware(['permission:gestionar_programaciones', 'time.window']);
@@ -303,6 +317,9 @@ Route::middleware('auth')->group(function () {
         |--------------------------------------------------------------------------
         | Ventanas de tiempo
         |--------------------------------------------------------------------------
+        |
+        | - admin_general / admin_sucursal → gestionan ventanas (por mapping '*')
+        | - operador / lectura             → NO gestionan.
         */
 
         Route::prefix('ventanas-tiempo')->name('timewindows.')->group(function () {
@@ -341,6 +358,7 @@ Route::middleware('auth')->group(function () {
                 ->name('reopen')
                 ->middleware('permission:gestionar_timewindows');
 
+            // Estado de ventanas para el usuario actual (puede servir a operador también).
             Route::get('/mi-estado', [TimeWindowController::class, 'status'])
                 ->name('status');
         });
@@ -363,36 +381,40 @@ Route::middleware('auth')->group(function () {
         |--------------------------------------------------------------------------
         | Reportes
         |--------------------------------------------------------------------------
+        |
+        | Acceso:
+        | - admin_general / admin_sucursal / operador / lectura
+        |   (todos tienen ver_reportes en mapping salvo que cambies).
         */
 
         Route::prefix('reportes')
-                ->name('reportes.')
-                ->middleware('permission:ver_reportes')
-                ->group(function () {
+            ->name('reportes.')
+            ->middleware('permission:ver_reportes')
+            ->group(function () {
 
-                    Route::get('/', [ReporteController::class, 'index'])
-                        ->name('index');
+                Route::get('/', [ReporteController::class, 'index'])
+                    ->name('index');
 
-                    // 1) Resumen Paradero x Horario
-                    Route::get('/resumen/paradero-horario/excel', [ReporteController::class, 'resumenParaderoHorarioExcel'])
-                        ->name('resumen.paradero-horario.excel');
+                // 1) Resumen Paradero x Horario
+                Route::get('/resumen/paradero-horario/excel', [ReporteController::class, 'resumenParaderoHorarioExcel'])
+                    ->name('resumen.paradero-horario.excel');
 
-                    Route::get('/resumen/paradero-horario/pdf', [ReporteController::class, 'resumenParaderoHorarioPdf'])
-                        ->name('resumen.paradero-horario.pdf');
+                Route::get('/resumen/paradero-horario/pdf', [ReporteController::class, 'resumenParaderoHorarioPdf'])
+                    ->name('resumen.paradero-horario.pdf');
 
-                    // 2) Resumen Ruta x Paradero
-                    Route::get('/resumen/ruta-paradero/excel', [ReporteController::class, 'resumenRutaParaderoExcel'])
-                        ->name('resumen.ruta-paradero.excel');
+                // 2) Resumen Ruta x Paradero
+                Route::get('/resumen/ruta-paradero/excel', [ReporteController::class, 'resumenRutaParaderoExcel'])
+                    ->name('resumen.ruta-paradero.excel');
 
-                    Route::get('/resumen/ruta-paradero/pdf', [ReporteController::class, 'resumenRutaParaderoPdf'])
-                        ->name('resumen.ruta-paradero.pdf');
+                Route::get('/resumen/ruta-paradero/pdf', [ReporteController::class, 'resumenRutaParaderoPdf'])
+                    ->name('resumen.ruta-paradero.pdf');
 
-                    // 3) Rutas / Lotes / Comedores
-                    Route::get('/rutas-lotes/excel', [ReporteController::class, 'rutasLotesExcel'])
-                        ->name('rutas-lotes.excel');
+                // 3) Rutas / Lotes / Comedores
+                Route::get('/rutas-lotes/excel', [ReporteController::class, 'rutasLotesExcel'])
+                    ->name('rutas-lotes.excel');
 
-                    Route::get('/rutas-lotes/pdf', [ReporteController::class, 'rutasLotesPdf'])
-                        ->name('rutas-lotes.pdf');
-                });
+                Route::get('/rutas-lotes/pdf', [ReporteController::class, 'rutasLotesPdf'])
+                    ->name('rutas-lotes.pdf');
+            });
     });
 });

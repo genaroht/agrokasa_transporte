@@ -61,9 +61,6 @@ class PermissionMiddleware
         return $next($request);
     }
 
-    /**
-     * Respuesta cuando NO tiene permiso.
-     */
     protected function deny(Request $request, string $message): Response
     {
         if ($request->expectsJson() || $request->is('api/*')) {
@@ -72,6 +69,7 @@ class PermissionMiddleware
             ], 403);
         }
 
-        return redirect()->back()->withErrors($message);
+        // ⚠️ Nada de redirect()->back(), causa bucles con /login
+        abort(403, $message);
     }
 }

@@ -54,6 +54,6 @@ class RoleMiddleware
             ], 403);
         }
 
-        return redirect()->back()->withErrors($message);
+        abort(403, $message);
     }
 }

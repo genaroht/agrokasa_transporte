@@ -20,6 +20,10 @@ class ProgramacionController extends Controller
     /**
      * Listado de programaciones (filtro por fecha, sucursal, área, horario, estado, tipo).
      * Mejora: por defecto muestra SOLO las programaciones de HOY.
+     *
+     * Acceso controlado por middleware:
+     *  - permission:gestionar_programaciones|ver_reportes
+     *  - sucursal (contexto de sucursal)
      */
     public function index(Request $request)
     {
@@ -27,14 +31,6 @@ class ProgramacionController extends Controller
         $sucursalActual    = $request->attributes->get('sucursalActual');
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
         $esAdminGral       = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
-
-        // Permiso: ver reportes o gestionar programaciones
-        if (
-            !$user->hasPermissionTo('ver_reportes') &&
-            !$user->hasPermissionTo('gestionar_programaciones')
-        ) {
-            abort(403, 'No tiene permisos para ver programaciones.');
-        }
 
         $query = Programacion::with(['sucursal', 'area', 'horario', 'creador']);
 
@@ -117,6 +113,10 @@ class ProgramacionController extends Controller
     /**
      * Formulario para crear cabecera de programación.
      * Después de crearla se redirige a la matriz (edit).
+     *
+     * Acceso controlado por middleware:
+     *  - permission:gestionar_programaciones
+     *  - sucursal
      */
     public function create(Request $request)
     {
@@ -125,16 +125,9 @@ class ProgramacionController extends Controller
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
         $esAdminGral       = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
 
-        if (!$user->hasPermissionTo('gestionar_programaciones')) {
-            abort(403, 'No tiene permisos para crear programaciones.');
-        }
-
         $sucursales = $esAdminGral
-            ? Sucursal::where('activo', true)
-                ->orderBy('nombre')
-                ->get()
-            : Sucursal::where('id', $contextSucursalId)
-                ->get();
+            ? Sucursal::where('activo', true)->orderBy('nombre')->get()
+            : Sucursal::where('id', $contextSucursalId)->get();
 
         $areas = Area::where('activo', true)
             ->when(!$esAdminGral, function ($q) use ($user, $contextSucursalId) {
@@ -209,109 +202,111 @@ class ProgramacionController extends Controller
 
     /**
      * Guarda/crea la cabecera de la programación y redirige a la matriz.
-     * Middleware time.window debe aplicarse aquí (en rutas).
+     * Middleware time.window debe aplicarse en las rutas.
+     *
+     * Acceso controlado por middleware:
+     *  - permission:gestionar_programaciones
+     *  - sucursal
+     *  - time.window
      */
-public function store(Request $request)
-{
-    $user = $request->user();
+    public function store(Request $request)
+    {
+        $user = $request->user();
 
-    // Validar datos básicos
-    $data = $request->validate([
-        'fecha'      => 'required|date',
-        'tipo'       => 'required|in:recojo,salida',
-        'area_id'    => 'required|integer|exists:areas,id',
-        'horario_id' => 'required|integer|exists:horarios,id',
-    ]);
+        // Validar datos básicos
+        $data = $request->validate([
+            'fecha'      => 'required|date',
+            'tipo'       => 'required|in:recojo,salida',
+            'area_id'    => 'required|integer|exists:areas,id',
+            'horario_id' => 'required|integer|exists:horarios,id',
+        ]);
 
-    // Sucursal de contexto (middleware) o la del usuario
-    $sucursalActual = $request->attributes->get('sucursalActual');
-    $sucursalId = $sucursalActual->id ?? $user->sucursal_id;
+        // Sucursal de contexto (middleware) o la del usuario
+        $sucursalActual = $request->attributes->get('sucursalActual');
+        $sucursalId     = $sucursalActual->id ?? $user->sucursal_id;
 
-    // Si no es admin_general ni admin, forzamos su propia área (por seguridad)
-    if (!($user->isAdminGeneral() || $user->hasRole('admin'))) {
-        if ($user->area_id) {
+        // Roles “admin” a nivel de sucursal
+        $esAdminGral      = method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
+        $esAdminSucursal  = method_exists($user, 'hasRole') && $user->hasRole('admin_sucursal');
+
+        // Si NO es admin_general ni admin_sucursal, forzamos su propia área (Operador)
+        if (! $esAdminGral && ! $esAdminSucursal && $user->area_id) {
             $data['area_id'] = $user->area_id;
         }
-    }
 
-    // ¿Ya existe una programación con la misma combinación?
-    $programacionExistente = \App\Models\Programacion::where('sucursal_id', $sucursalId)
-        ->whereDate('fecha', $data['fecha'])
-        ->where('tipo', $data['tipo'])
-        ->where('area_id', $data['area_id'])
-        ->where('horario_id', $data['horario_id'])
-        ->first();
+        // ¿Ya existe una programación con la misma combinación?
+        $programacionExistente = Programacion::where('sucursal_id', $sucursalId)
+            ->whereDate('fecha', $data['fecha'])
+            ->where('tipo', $data['tipo'])
+            ->where('area_id', $data['area_id'])
+            ->where('horario_id', $data['horario_id'])
+            ->first();
 
-    if ($programacionExistente) {
-        // Si ya existe, solo redirigimos a la matriz manual de esa programación
+        if ($programacionExistente) {
+            // Si ya existe, solo redirigimos a la matriz manual de esa programación
+            return redirect()
+                ->route('programaciones.edit', $programacionExistente)
+                ->with('status', 'Ya existía una programación para esa Fecha / Tipo / Área / Horario. Se abrió para edición.');
+        }
+
+        // Crear nueva programación
+        $programacion = new Programacion();
+        $programacion->sucursal_id    = $sucursalId;
+        $programacion->fecha          = $data['fecha'];
+        $programacion->tipo           = $data['tipo'];
+        $programacion->area_id        = $data['area_id'];
+        $programacion->horario_id     = $data['horario_id'];
+        $programacion->estado         = 'borrador';
+        $programacion->total_personas = 0;
+        $programacion->creado_por     = $user->id ?? null;
+        $programacion->save();
+
+        if (method_exists($programacion, 'recalcularTotalPersonas')) {
+            $programacion->recalcularTotalPersonas();
+        }
+
         return redirect()
-            ->route('programaciones.edit', $programacionExistente)
-            ->with('status', 'Ya existía una programación para esa Fecha / Tipo / Área / Horario. Se abrió para edición.');
+            ->route('programaciones.edit', $programacion)
+            ->with('status', 'Programación creada correctamente. Ahora puedes completar la matriz manual.');
     }
-
-    // Crear nueva programación
-    $programacion = new \App\Models\Programacion();
-    $programacion->sucursal_id    = $sucursalId;
-    $programacion->fecha          = $data['fecha'];
-    $programacion->tipo           = $data['tipo'];
-    $programacion->area_id        = $data['area_id'];
-    $programacion->horario_id     = $data['horario_id'];
-    $programacion->estado         = 'borrador';
-    $programacion->total_personas = 0;
-    $programacion->creado_por     = $user->id ?? null; // si tienes este campo
-    $programacion->save();
-
-    // Si tu modelo tiene este método, puedes dejarlo; si no, elimínalo
-    if (method_exists($programacion, 'recalcularTotalPersonas')) {
-        $programacion->recalcularTotalPersonas();
-    }
-
-    // 🔹 IMPORTANTE: redirigir a la matriz manual
-    return redirect()
-        ->route('programaciones.edit', $programacion)
-        ->with('status', 'Programación creada correctamente. Ahora puedes completar la matriz manual.');
-}
-
 
     /**
      * Muestra la matriz Paradero x Ruta para editar cantidades.
      * Aquí ya llevamos Rutas con Lotes/Comedores en JSON para el front.
+     *
+     * Acceso controlado por middleware:
+     *  - permission:gestionar_programaciones|ver_reportes
+     *  - sucursal
      */
     public function edit(Request $request, Programacion $programacion)
     {
         $user              = $request->user();
         $sucursalActual    = $request->attributes->get('sucursalActual');
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
-        $esAdminGral       = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
 
-        if (
-            !$user->hasPermissionTo('gestionar_programaciones') &&
-            !$user->hasPermissionTo('ver_reportes')
-        ) {
-            abort(403, 'No tiene permisos para ver esta programación.');
-        }
+        $esAdminGral      = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
+        $esAdminSucursal  = $user && method_exists($user, 'hasRole') && $user->hasRole('admin_sucursal');
+        $esOperador       = $user && method_exists($user, 'hasRole') && $user->hasRole('operador');
 
-        if (!$esAdminGral && (int) $programacion->sucursal_id !== (int) $contextSucursalId) {
+        // No permitir ver programaciones de otra sucursal (salvo que el contexto esté mal)
+        if (! $esAdminGral && (int) $programacion->sucursal_id !== (int) $contextSucursalId) {
             abort(403, 'No puede ver programaciones de otra sucursal.');
         }
 
-        if (
-            !$esAdminGral &&
-            $user->area_id &&
-            $programacion->area_id !== $user->area_id
-        ) {
+        // Restricción por área:
+        //   - admin_general y admin_sucursal pueden ver todas las áreas.
+        //   - operador solo su área (si tiene).
+        if (! $esAdminGral && ! $esAdminSucursal && $user->area_id && $programacion->area_id !== $user->area_id) {
             abort(403, 'No puede ver/editar programaciones de otra área.');
         }
 
         // Catálogos para editar cabecera (solo tendrá efecto para admin_general)
         $sucursales = $esAdminGral
-            ? Sucursal::where('activo', true)
-                ->orderBy('nombre')
-                ->get()
+            ? Sucursal::where('activo', true)->orderBy('nombre')->get()
             : Sucursal::where('id', $programacion->sucursal_id)->get();
 
         $areas = Area::where('activo', true)
-            ->when(!$esAdminGral, function ($q) use ($programacion) {
+            ->when(! $esAdminGral, function ($q) use ($programacion) {
                 $q->where('id', $programacion->area_id);
             })
             ->orderBy('nombre')
@@ -333,7 +328,7 @@ public function store(Request $request)
 
         $rutas = Ruta::where('sucursal_id', $programacion->sucursal_id)
             ->where('activo', true)
-            ->with('lotes') // importante para ruta → lote → comedor
+            ->with('lotes')
             ->orderBy('codigo')
             ->get();
 
@@ -359,9 +354,11 @@ public function store(Request $request)
             ->get();
 
         // Solo se puede editar la matriz si NO está cerrada
-        // y si tiene permiso de gestionar programaciones
-        $soloLectura = $programacion->estaCerrada()
-            || !$user->hasPermissionTo('gestionar_programaciones');
+        // y si el usuario puede gestionar programaciones (admin_general, admin_sucursal, operador)
+        $puedeGestionar = $esAdminGral
+            || ($user && method_exists($user, 'hasAnyRole') && $user->hasAnyRole(['admin_sucursal', 'operador']));
+
+        $soloLectura = $programacion->estaCerrada() || ! $puedeGestionar;
 
         return view('programaciones.edit', compact(
             'programacion',
@@ -378,31 +375,32 @@ public function store(Request $request)
 
     /**
      * Guarda la matriz de ProgramacionDetalle.
+     *
+     * Acceso controlado por middleware:
+     *  - permission:gestionar_programaciones
+     *  - sucursal
+     *  - time.window
      */
     public function update(Request $request, Programacion $programacion)
     {
         $user              = $request->user();
         $sucursalActual    = $request->attributes->get('sucursalActual');
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
-        $esAdminGral       = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
 
-        if (!$user->hasPermissionTo('gestionar_programaciones')) {
-            abort(403, 'No tiene permisos para modificar programaciones.');
-        }
+        $esAdminGral      = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
+        $esAdminSucursal  = $user && method_exists($user, 'hasRole') && $user->hasRole('admin_sucursal');
 
-        if (!$esAdminGral && (int) $programacion->sucursal_id !== (int) $contextSucursalId) {
+        // No puede modificar de otra sucursal
+        if (! $esAdminGral && (int) $programacion->sucursal_id !== (int) $contextSucursalId) {
             abort(403, 'No puede modificar programaciones de otra sucursal.');
         }
 
-        if (
-            !$esAdminGral &&
-            $user->area_id &&
-            $programacion->area_id !== $user->area_id
-        ) {
+        // Restricción por área
+        if (! $esAdminGral && ! $esAdminSucursal && $user->area_id && $programacion->area_id !== $user->area_id) {
             abort(403, 'No puede modificar programaciones de otra área.');
         }
 
-        // 🚫 Solo se puede modificar la matriz en estado BORRADOR
+        // Solo se puede modificar la matriz en estado BORRADOR
         if ($programacion->estado !== 'borrador') {
             return redirect()
                 ->back()
@@ -432,7 +430,7 @@ public function store(Request $request)
                 $paraderoId = $linea['paradero_id'] ?? null;
                 $personas   = isset($linea['personas']) ? (int) $linea['personas'] : 0;
 
-                if (!$paraderoId || $personas <= 0) {
+                if (! $paraderoId || $personas <= 0) {
                     if ($id && $existentes->has($id)) {
                         $existentes[$id]->delete();
                     }
@@ -488,7 +486,7 @@ public function store(Request $request)
                 $idsConservados[] = $det->id;
             }
 
-            if (!empty($idsConservados)) {
+            if (! empty($idsConservados)) {
                 $programacion->detalles()
                     ->whereNotIn('id', $idsConservados)
                     ->delete();
@@ -523,15 +521,16 @@ public function store(Request $request)
     /**
      * Actualizar cabecera de la programación (solo ADMIN_GENERAL).
      * Permite cambiar: sucursal, fecha, área, horario y tipo (recojo / salida).
+     *
+     * Acceso controlado por middleware:
+     *  - role:admin_general
+     *  - time.window
      */
     public function actualizarCabecera(Request $request, Programacion $programacion)
     {
-        $user              = $request->user();
-        $sucursalActual    = $request->attributes->get('sucursalActual');
-        $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
+        $user = $request->user();
 
         $esAdminGral = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
-
         if (! $esAdminGral) {
             abort(403, 'Solo el Administrador General puede modificar la cabecera de la programación.');
         }
@@ -542,15 +541,14 @@ public function store(Request $request)
             'fecha'       => 'required|date',
             'area_id'     => 'required|exists:areas,id',
             'horario_id'  => 'required|exists:horarios,id',
-            'tipo'        => 'required|in:recojo,salida',   // <- puede ser recojo o salida
+            'tipo'        => 'required|in:recojo,salida',
         ]);
 
         // Validar coherencia de horario vs tipo SOLO si el horario tiene tipo en BD
         $horario = Horario::findOrFail($data['horario_id']);
 
-        if (!empty($horario->tipo)) {
-            // En BD suele estar como 'SALIDA', 'RECOJO', etc. (mayúsculas, espacios, etc.)
-            $tipoHorarioDb = strtoupper(trim($horario->tipo));  // 'SALIDA' / 'RECOJO' / otros
+        if (! empty($horario->tipo)) {
+            $tipoHorarioDb = strtoupper(trim($horario->tipo));  // 'SALIDA' / 'RECOJO'
             $tipoForm      = $data['tipo'];                     // 'salida' / 'recojo'
 
             if ($tipoHorarioDb === 'SALIDA' && $tipoForm !== Programacion::TIPO_SALIDA) {
@@ -564,8 +562,6 @@ public function store(Request $request)
                     ->withErrors('El horario seleccionado es de RECOJO y el tipo elegido no coincide.')
                     ->withInput();
             }
-
-            // Si el tipo en BD es otro texto (ej. vacío, null, etc.), NO bloqueamos nada.
         }
 
         // Guardamos cambios en la cabecera
@@ -576,7 +572,7 @@ public function store(Request $request)
             'fecha'       => $data['fecha'],
             'area_id'     => $data['area_id'],
             'horario_id'  => $data['horario_id'],
-            'tipo'        => $data['tipo'],   // ahora se actualiza bien para recojo y salida
+            'tipo'        => $data['tipo'],
         ]);
 
         $programacion->actualizado_por = $user->id;
@@ -600,19 +596,24 @@ public function store(Request $request)
 
     /**
      * Eliminar una programación y sus detalles.
-     * Solo Admin General o Admin pueden eliminar.
+     * Solo Admin General o Administrador de Sucursal.
+     *
+     * Acceso controlado por middleware:
+     *  - permission:gestionar_programaciones
+     *  - time.window
      */
     public function destroy(Request $request, Programacion $programacion)
     {
         $user              = $request->user();
         $sucursalActual    = $request->attributes->get('sucursalActual');
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
-        $esAdminGral       = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
-        $esAdminSucursal   = $user && $user->hasRole('admin');
 
-        // Solo Admin General o Admin
+        $esAdminGral     = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
+        $esAdminSucursal = $user && method_exists($user, 'hasRole') && $user->hasRole('admin_sucursal');
+
+        // Solo Admin General o Admin de Sucursal
         if (! $esAdminGral && ! $esAdminSucursal) {
-            abort(403, 'Solo el Administrador General o el Administrador pueden eliminar programaciones.');
+            abort(403, 'Solo el Administrador General o el Administrador de Sucursal pueden eliminar programaciones.');
         }
 
         // Si NO es admin general, validar que sea de su sucursal
@@ -621,16 +622,11 @@ public function store(Request $request)
         }
 
         DB::transaction(function () use ($programacion, $user, $request) {
-            // Log antes de borrar
             $oldValues = $programacion->toArray();
 
-            // Borrar detalles primero
             $programacion->detalles()->delete();
-
-            // Borrar cabecera
             $programacion->delete();
 
-            // Registrar en auditoría
             AuditLog::create([
                 'user_id'        => $user->id,
                 'action'         => 'programacion_deleted',
@@ -650,34 +646,31 @@ public function store(Request $request)
 
     /**
      * Reabrir programación (cambiar estado a BORRADOR) para poder editar la matriz.
-     * Solo Admin General o rol "admin".
+     * Solo Admin General o Administrador de Sucursal.
+     *
+     * Acceso controlado por middleware:
+     *  - permission:gestionar_programaciones
+     *  - time.window
      */
     public function reabrir(Request $request, Programacion $programacion)
     {
         $user              = $request->user();
         $sucursalActual    = $request->attributes->get('sucursalActual');
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
-        $esAdminGral       = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
-        $esAdminSistema    = $user && method_exists($user, 'hasRole') && $user->hasRole('admin');
 
-        if (!$user->hasPermissionTo('gestionar_programaciones')) {
-            abort(403, 'No tiene permisos para modificar programaciones.');
+        $esAdminGral     = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
+        $esAdminSucursal = $user && method_exists($user, 'hasRole') && $user->hasRole('admin_sucursal');
+
+        // Solo admin_general o admin_sucursal pueden reabrir
+        if (! $esAdminGral && ! $esAdminSucursal) {
+            abort(403, 'Solo el Administrador General o el Administrador de Sucursal pueden editar el estado.');
         }
 
-        // Solo admin_general o admin pueden reabrir
-        if (!$esAdminGral && !$esAdminSistema) {
-            abort(403, 'Solo el Administrador General o el Administrador pueden editar el estado.');
-        }
-
-        if (!$esAdminGral && (int) $programacion->sucursal_id !== (int) $contextSucursalId) {
+        if (! $esAdminGral && (int) $programacion->sucursal_id !== (int) $contextSucursalId) {
             abort(403, 'No puede modificar programaciones de otra sucursal.');
         }
 
-        if (
-            !$esAdminGral &&
-            $user->area_id &&
-            $programacion->area_id !== $user->area_id
-        ) {
+        if (! $esAdminGral && ! $esAdminSucursal && $user->area_id && $programacion->area_id !== $user->area_id) {
             abort(403, 'No puede modificar programaciones de otra área.');
         }
 
@@ -688,7 +681,7 @@ public function store(Request $request)
         }
 
         $old = $programacion->getOriginal();
-        $programacion->estado = 'borrador';
+        $programacion->estado         = 'borrador';
         $programacion->actualizado_por = $user->id;
         $programacion->save();
 
@@ -710,27 +703,25 @@ public function store(Request $request)
 
     /**
      * Cambia estado a CONFIRMADO.
+     *
+     * Acceso controlado por middleware:
+     *  - permission:gestionar_programaciones
+     *  - time.window
      */
     public function confirmar(Request $request, Programacion $programacion)
     {
         $user              = $request->user();
         $sucursalActual    = $request->attributes->get('sucursalActual');
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
-        $esAdminGral       = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
 
-        if (!$user->hasPermissionTo('gestionar_programaciones')) {
-            abort(403, 'No tiene permisos para confirmar programaciones.');
-        }
+        $esAdminGral     = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
+        $esAdminSucursal = $user && method_exists($user, 'hasRole') && $user->hasRole('admin_sucursal');
 
-        if (!$esAdminGral && (int) $programacion->sucursal_id !== (int) $contextSucursalId) {
+        if (! $esAdminGral && (int) $programacion->sucursal_id !== (int) $contextSucursalId) {
             abort(403, 'No puede confirmar programaciones de otra sucursal.');
         }
 
-        if (
-            !$esAdminGral &&
-            $user->area_id &&
-            $programacion->area_id !== $user->area_id
-        ) {
+        if (! $esAdminGral && ! $esAdminSucursal && $user->area_id && $programacion->area_id !== $user->area_id) {
             abort(403, 'No puede confirmar programaciones de otra área.');
         }
 
@@ -739,7 +730,7 @@ public function store(Request $request)
         }
 
         $old = $programacion->getOriginal();
-        $programacion->estado = 'confirmado';
+        $programacion->estado          = 'confirmado';
         $programacion->actualizado_por = $user->id;
         $programacion->save();
 
@@ -761,32 +752,30 @@ public function store(Request $request)
 
     /**
      * Cambia estado a CERRADO (no editable).
+     *
+     * Acceso controlado por middleware:
+     *  - permission:gestionar_programaciones
+     *  - time.window
      */
     public function cerrar(Request $request, Programacion $programacion)
     {
         $user              = $request->user();
         $sucursalActual    = $request->attributes->get('sucursalActual');
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
-        $esAdminGral       = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
 
-        if (!$user->hasPermissionTo('gestionar_programaciones')) {
-            abort(403, 'No tiene permisos para cerrar programaciones.');
-        }
+        $esAdminGral     = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
+        $esAdminSucursal = $user && method_exists($user, 'hasRole') && $user->hasRole('admin_sucursal');
 
-        if (!$esAdminGral && (int) $programacion->sucursal_id !== (int) $contextSucursalId) {
+        if (! $esAdminGral && (int) $programacion->sucursal_id !== (int) $contextSucursalId) {
             abort(403, 'No puede cerrar programaciones de otra sucursal.');
         }
 
-        if (
-            !$esAdminGral &&
-            $user->area_id &&
-            $programacion->area_id !== $user->area_id
-        ) {
+        if (! $esAdminGral && ! $esAdminSucursal && $user->area_id && $programacion->area_id !== $user->area_id) {
             abort(403, 'No puede cerrar programaciones de otra área.');
         }
 
         $old = $programacion->getOriginal();
-        $programacion->estado = 'cerrado';
+        $programacion->estado          = 'cerrado';
         $programacion->actualizado_por = $user->id;
         $programacion->save();
 
@@ -809,6 +798,10 @@ public function store(Request $request)
     /**
      * Resumen Paradero x Horario para la sucursal del contexto, fecha y tipo (recojo/salida).
      * Solo muestra matriz cuando EXISTEN programaciones con personas > 0.
+     *
+     * Acceso controlado por middleware:
+     *  - permission:ver_reportes
+     *  - sucursal
      */
     public function resumenParaderoHorario(Request $request)
     {
@@ -816,29 +809,20 @@ public function store(Request $request)
         $sucursalActual    = $request->attributes->get('sucursalActual');
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
 
-        if (!$user->hasPermissionTo('ver_reportes')) {
-            abort(403, 'No tiene permisos para ver resúmenes.');
-        }
-
         $request->validate([
             'fecha' => 'nullable|date',
             'tipo'  => 'nullable|in:recojo,salida',
         ]);
 
-        // Por defecto: fecha HOY y tipo RECOJO (para que no mezcle recojo + salida)
+        // Por defecto: fecha HOY y tipo RECOJO
         $fecha = $request->input('fecha', now()->toDateString());
-        $tipo  = $request->input('tipo', Programacion::TIPO_RECOJO); // 'recojo' o 'salida'
+        $tipo  = $request->input('tipo', Programacion::TIPO_RECOJO);
 
         $sucursalId = $contextSucursalId;
-        if (!$sucursalId) {
-            // Fallback por si algo raro pasa con el middleware
+        if (! $sucursalId) {
             $sucursalId = $user->sucursal_id ?: Sucursal::where('activo', true)->value('id');
         }
 
-        // ============================
-        // 1) Traer datos agregados
-        //    PARADERO x HORARIO
-        // ============================
         $rows = ProgramacionDetalle::selectRaw('
                 programacion_detalles.paradero_id,
                 programaciones.horario_id,
@@ -856,18 +840,14 @@ public function store(Request $request)
             )
             ->get();
 
-        // ============================
-        // 2) Preparar estructuras
-        // ============================
         $paraderos        = collect();
         $horarios         = collect();
-        $matriz           = []; // [paradero_id][horario_id] = total
-        $totalesParadero  = []; // [paradero_id] => total en todos los horarios
-        $totalesHorario   = []; // [horario_id]  => total en todos los paraderos
+        $matriz           = [];
+        $totalesParadero  = [];
+        $totalesHorario   = [];
         $totalGeneral     = 0;
 
         if ($rows->isNotEmpty()) {
-            // Solo los paraderos y horarios que REALMENTE tienen datos
             $paraderoIds = $rows->pluck('paradero_id')->unique()->filter()->values();
             $horarioIds  = $rows->pluck('horario_id')->unique()->filter()->values();
 
@@ -885,11 +865,11 @@ public function store(Request $request)
                 $hid   = (int) $r->horario_id;
                 $total = (int) $r->total;
 
-                if ($total <= 0 || !$pid || !$hid) {
+                if ($total <= 0 || ! $pid || ! $hid) {
                     continue;
                 }
 
-                if (!isset($matriz[$pid])) {
+                if (! isset($matriz[$pid])) {
                     $matriz[$pid] = [];
                 }
 
@@ -918,13 +898,16 @@ public function store(Request $request)
             'totalGeneral'
         ));
     }
+
     /**
      * Vista rápida de captura – Opción 2 (por bloques de Lugar).
      *
-     * - Admin General / Admin: pueden elegir cualquier Área y Horario.
-     * - Otros usuarios: solo su Área y, si tienen horario asignado, solo ese Horario.
-     * - Se elige Fecha y Tipo (recojo / salida).
-     * - Matriz: filas = Ruta / Lote / Comedor, columnas = Paraderos agrupados por Lugar.
+     * - Admin General / Admin de Sucursal: pueden elegir cualquier Área y Horario.
+     * - Operador: solo su Área y, si tienen horario asignado, solo ese Horario.
+     *
+     * Acceso controlado por middleware:
+     *  - permission:gestionar_programaciones
+     *  - sucursal
      */
     public function capturaRapida(Request $request)
     {
@@ -932,12 +915,8 @@ public function store(Request $request)
         $sucursalActual    = $request->attributes->get('sucursalActual');
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
 
-        if (! $user->hasPermissionTo('gestionar_programaciones')) {
-            abort(403, 'No tiene permisos para capturar programaciones.');
-        }
-
-        $esAdminGral = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
-        $esAdmin     = $user && $user->hasRole('admin');
+        $esAdminGral     = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
+        $esAdminSucursal = $user && method_exists($user, 'hasRole') && $user->hasRole('admin_sucursal');
 
         $request->validate([
             'fecha'      => 'nullable|date',
@@ -953,16 +932,14 @@ public function store(Request $request)
             $contextSucursalId = $user->sucursal_id ?: Sucursal::where('activo', true)->value('id');
         }
 
-        // ==========================
         // 1) Áreas según rol
-        // ==========================
         $areasQuery = Area::where('activo', true)
             ->when($contextSucursalId, function ($q) use ($contextSucursalId) {
                 $q->whereNull('sucursal_id')
                   ->orWhere('sucursal_id', $contextSucursalId);
             });
 
-        if (! $esAdminGral && ! $esAdmin) {
+        if (! $esAdminGral && ! $esAdminSucursal) {
             if ($user->area_id) {
                 $areasQuery->where('id', $user->area_id);
             } else {
@@ -979,9 +956,7 @@ public function store(Request $request)
                 : 0;
         }
 
-        // ==========================
         // 2) Horarios según tipo y rol
-        // ==========================
         $tipoHorarioDb = $tipo === Programacion::TIPO_SALIDA ? 'SALIDA' : 'RECOJO';
 
         $horariosQuery = Horario::where('activo', true)
@@ -991,8 +966,7 @@ public function store(Request $request)
             })
             ->where('tipo', $tipoHorarioDb);
 
-        // Usuarios NO admin: si tienen horario asignado, solo ese
-        if (! $esAdminGral && ! $esAdmin && ! empty($user->horario_id)) {
+        if (! $esAdminGral && ! $esAdminSucursal && ! empty($user->horario_id)) {
             $horariosQuery->where('id', $user->horario_id);
         }
 
@@ -1005,9 +979,7 @@ public function store(Request $request)
                 : 0;
         }
 
-        // ==========================
         // 3) Paraderos agrupados por Lugar
-        // ==========================
         $paraderos = Paradero::where('sucursal_id', $contextSucursalId)
             ->where('activo', true)
             ->with('lugar')
@@ -1023,9 +995,7 @@ public function store(Request $request)
                 return $p->lugar?->nombre ?? 'SIN LUGAR';
             });
 
-        // ==========================
         // 4) Construir filas Ruta / Lote / Comedor
-        // ==========================
         $filas        = [];
         $matrix       = [];
         $programacion = null;
@@ -1083,7 +1053,7 @@ public function store(Request $request)
                 }
             }
 
-            // Ordenar filas: Ruta, Lote, Comedor
+            // Ordenar filas
             $filas = collect($filas)
                 ->sortBy(function (array $f) {
                     return sprintf(
@@ -1095,9 +1065,7 @@ public function store(Request $request)
                 })
                 ->toArray();
 
-            // ==========================
             // 5) Cargar programación existente (para precargar cantidades)
-            // ==========================
             $programacion = Programacion::where('sucursal_id', $contextSucursalId)
                 ->whereDate('fecha', $fecha)
                 ->where('area_id', $areaIdSeleccionado)
@@ -1151,7 +1119,7 @@ public function store(Request $request)
             'matrix',
             'programacion',
             'esAdminGral',
-            'esAdmin'
+            'esAdminSucursal'
         ));
     }
 
@@ -1160,8 +1128,11 @@ public function store(Request $request)
      *
      * - Reemplaza completamente la programación existente para
      *   Sucursal + Fecha + Área + Horario + Tipo.
-     * - Solo Admin General / Admin pueden guardar para cualquier Área/Horario.
-     * - Otros usuarios solo pueden guardar para su Área y, si tienen horario asignado, para ese Horario.
+     *
+     * Acceso controlado por middleware:
+     *  - permission:gestionar_programaciones
+     *  - sucursal
+     *  - time.window
      */
     public function guardarCapturaRapida(Request $request)
     {
@@ -1169,12 +1140,8 @@ public function store(Request $request)
         $sucursalActual    = $request->attributes->get('sucursalActual');
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
 
-        if (! $user->hasPermissionTo('gestionar_programaciones')) {
-            abort(403, 'No tiene permisos para capturar programaciones.');
-        }
-
-        $esAdminGral = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
-        $esAdmin     = $user && $user->hasRole('admin');
+        $esAdminGral     = $user && method_exists($user, 'isAdminGeneral') && $user->isAdminGeneral();
+        $esAdminSucursal = $user && method_exists($user, 'hasRole') && $user->hasRole('admin_sucursal');
 
         $data = $request->validate([
             'fecha'      => 'required|date',
@@ -1189,14 +1156,14 @@ public function store(Request $request)
         }
 
         // Restricción por Área
-        if (! $esAdminGral && ! $esAdmin) {
+        if (! $esAdminGral && ! $esAdminSucursal) {
             if (! $user->area_id || (int) $user->area_id !== (int) $data['area_id']) {
                 abort(403, 'No puede capturar programación para otra área.');
             }
         }
 
         // Restricción por Horario (si el usuario tiene uno asignado)
-        if (! $esAdminGral && ! $esAdmin && ! empty($user->horario_id)) {
+        if (! $esAdminGral && ! $esAdminSucursal && ! empty($user->horario_id)) {
             if ((int) $user->horario_id !== (int) $data['horario_id']) {
                 abort(403, 'No puede capturar programación para otro horario.');
             }
@@ -1227,7 +1194,6 @@ public function store(Request $request)
         $matrix    = $data['matrix'] ?? [];
 
         DB::transaction(function () use ($user, $request, $contextSucursalId, $fecha, $tipo, $areaId, $horarioId, $matrix) {
-            // Buscar o crear programación
             $programacion = Programacion::firstOrCreate(
                 [
                     'sucursal_id' => $contextSucursalId,
@@ -1244,7 +1210,6 @@ public function store(Request $request)
                 ]
             );
 
-            // Eliminar detalles actuales: la captura rápida redefine todo
             $programacion->detalles()->delete();
 
             foreach ($matrix as $keyFila => $cols) {
@@ -1292,7 +1257,6 @@ public function store(Request $request)
                 }
             }
 
-            // Actualizar totales de la cabecera
             $oldProg = $programacion->getOriginal();
 
             $programacion->recalcularTotalPersonas();
@@ -1323,19 +1287,19 @@ public function store(Request $request)
 
     /**
      * Resumen Ruta x Paradero (formato nuevo):
-     *  - Filas: HORARIO / RESPONSABLE / ÁREA
+     *  - Filas: HORARIO / ÁREA
      *  - Columnas: Lugares y sus Paraderos
      *  - Subtotal por horario (fila extra debajo de cada bloque de horario).
+     *
+     * Acceso controlado por middleware:
+     *  - permission:ver_reportes
+     *  - sucursal
      */
     public function resumenRutaParadero(Request $request)
     {
         $user              = $request->user();
         $sucursalActual    = $request->attributes->get('sucursalActual');
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
-
-        if (!$user->hasPermissionTo('ver_reportes')) {
-            abort(403, 'No tiene permisos para ver resúmenes.');
-        }
 
         $request->validate([
             'fecha' => 'nullable|date',
@@ -1346,23 +1310,16 @@ public function store(Request $request)
         $tipo  = $request->input('tipo'); // null = ambos
 
         $sucursalId = $contextSucursalId;
-        if (!$sucursalId) {
+        if (! $sucursalId) {
             $sucursalId = $user->sucursal_id ?: Sucursal::where('activo', true)->value('id');
         }
 
-        // ==============================
-        // Catálogo de paraderos (con lugar)
-        // ==============================
         $paraderos = Paradero::where('sucursal_id', $sucursalId)
             ->where('activo', true)
             ->with('lugar')
             ->orderBy('nombre')
             ->get();
 
-        // ==============================
-        // Query agregada:
-        // HORARIO x ÁREA x PARADERO
-        // ==============================
         $rows = ProgramacionDetalle::selectRaw('
                 programaciones.horario_id,
                 programaciones.area_id,
@@ -1382,15 +1339,14 @@ public function store(Request $request)
             )
             ->get();
 
-        // Preparar estructuras por defecto
         $horarios              = collect();
         $areas                 = collect();
-        $filas                 = []; // [horario_id][area_id] = [ 'horario_id', 'area_id' ]
-        $matriz                = []; // [horario_id][area_id][paradero_id] = total
-        $totalesFila           = []; // [horario_id][area_id] = total fila
-        $subtotalesHorario     = []; // [horario_id][paradero_id] = subtotal por horario/paradero
-        $subtotalesHorarioTot  = []; // [horario_id] = total general por horario
-        $totalesParadero       = []; // [paradero_id] = total en todos los horarios/áreas
+        $filas                 = [];
+        $matriz                = [];
+        $totalesFila           = [];
+        $subtotalesHorario     = [];
+        $subtotalesHorarioTot  = [];
+        $totalesParadero       = [];
         $totalGeneral          = 0;
 
         if ($rows->isNotEmpty()) {
@@ -1414,35 +1370,35 @@ public function store(Request $request)
                 $pid    = (int) $r->paradero_id;
                 $total  = (int) $r->total;
 
-                if (!$hid || !$aid || !$pid) {
+                if (! $hid || ! $aid || ! $pid) {
                     continue;
                 }
 
-                if (!isset($filas[$hid])) {
+                if (! isset($filas[$hid])) {
                     $filas[$hid] = [];
                 }
-                if (!isset($filas[$hid][$aid])) {
+                if (! isset($filas[$hid][$aid])) {
                     $filas[$hid][$aid] = [
                         'horario_id' => $hid,
                         'area_id'    => $aid,
                     ];
                 }
 
-                if (!isset($matriz[$hid])) {
+                if (! isset($matriz[$hid])) {
                     $matriz[$hid] = [];
                 }
-                if (!isset($matriz[$hid][$aid])) {
+                if (! isset($matriz[$hid][$aid])) {
                     $matriz[$hid][$aid] = [];
                 }
 
                 $matriz[$hid][$aid][$pid] = $total;
 
-                if (!isset($totalesFila[$hid])) {
+                if (! isset($totalesFila[$hid])) {
                     $totalesFila[$hid] = [];
                 }
                 $totalesFila[$hid][$aid] = ($totalesFila[$hid][$aid] ?? 0) + $total;
 
-                if (!isset($subtotalesHorario[$hid])) {
+                if (! isset($subtotalesHorario[$hid])) {
                     $subtotalesHorario[$hid] = [];
                 }
                 $subtotalesHorario[$hid][$pid] = ($subtotalesHorario[$hid][$pid] ?? 0) + $total;
@@ -1453,15 +1409,13 @@ public function store(Request $request)
                 $totalGeneral         += $total;
             }
 
-            // Ordenar filas: primero por hora de horario, luego por responsable/área
-            // Orden externo por horario
+            // Orden de filas por horario y luego por área/responsable
             $filas = collect($filas)
                 ->sortBy(function ($filasPorArea, $hid) use ($horariosIndex) {
                     $h = $horariosIndex->get($hid);
                     return $h ? ($h->hora_formateada ?? '00:00') : '00:00';
                 })
                 ->map(function ($filasPorArea) use ($areasIndex) {
-                    // Orden interno por responsable + nombre de área
                     return collect($filasPorArea)
                         ->sortBy(function ($fila) use ($areasIndex) {
                             $area  = $areasIndex->get($fila['area_id']);
@@ -1475,7 +1429,6 @@ public function store(Request $request)
                 ->toArray();
         }
 
-        // Agrupar paraderos por Lugar (para cabecera de columnas)
         $paraderosPorLugar = $paraderos
             ->sortBy(function (Paradero $p) {
                 $lugar = $p->lugar?->nombre ?? 'SIN LUGAR';
@@ -1514,17 +1467,16 @@ public function store(Request $request)
      *
      * Cada fila: Ruta - Lote - Comedor
      * Columnas: bloques Horario x Áreas + subtotal por horario.
-     * También calcula totales por fila, por columna y total general.
+     *
+     * Acceso controlado por middleware:
+     *  - permission:ver_reportes
+     *  - sucursal
      */
     public function reporteRutaLoteCom(Request $request)
     {
         $user              = $request->user();
         $sucursalActual    = $request->attributes->get('sucursalActual');
         $contextSucursalId = $sucursalActual?->id ?? $user->sucursal_id;
-
-        if (!$user->hasPermissionTo('ver_reportes')) {
-            abort(403, 'No tiene permisos para ver este reporte.');
-        }
 
         $request->validate([
             'fecha' => 'nullable|date',
@@ -1535,13 +1487,10 @@ public function store(Request $request)
         $tipo  = $request->input('tipo'); // recojo / salida / null
 
         $sucursalId = $contextSucursalId ?: $user->sucursal_id;
-        if (!$sucursalId) {
+        if (! $sucursalId) {
             $sucursalId = Sucursal::where('activo', true)->value('id');
         }
 
-        // ==================================================
-        // 1) Traer datos agregados Ruta/Lote/Comedor/Horario/Área
-        // ==================================================
         $rows = ProgramacionDetalle::selectRaw('
                 programacion_detalles.ruta_id,
                 COALESCE(programacion_detalles.lote, \'\')    AS lote,
@@ -1565,8 +1514,6 @@ public function store(Request $request)
             )
             ->get();
 
-        // Si no hay datos igual devolvemos la vista con todo vacío,
-        // incluida la variable $columnas (para que el Blade no reviente).
         if ($rows->isEmpty()) {
             $horarios        = collect();
             $areas           = collect();
@@ -1575,7 +1522,7 @@ public function store(Request $request)
             $totalesFila     = [];
             $totalesColumna  = [];
             $totalGeneral    = 0;
-            $columnas        = [];   // <<--- IMPORTANTE
+            $columnas        = [];
 
             return view('programaciones.reporte_ruta_lote_com', compact(
                 'fecha',
@@ -1591,9 +1538,6 @@ public function store(Request $request)
             ));
         }
 
-        // ==================================================
-        // 2) Catálogos de apoyo
-        // ==================================================
         $rutaIds    = $rows->pluck('ruta_id')->filter()->unique()->values();
         $horarioIds = $rows->pluck('horario_id')->unique()->values();
         $areaIds    = $rows->pluck('area_id')->unique()->values();
@@ -1611,13 +1555,10 @@ public function store(Request $request)
             ->orderBy('nombre')
             ->get();
 
-        // ==================================================
-        // 3) Construir filas (Ruta/Lote/Comedor) y matriz
-        // ==================================================
-        $filas          = []; // keyFila => [ruta_id, ruta_codigo, lote, comedor]
-        $matriz         = []; // [keyFila][horario_id][area_id] = total
-        $totalesFila    = []; // [keyFila] = total fila
-        $totalesColumna = []; // [horario_id][area_id] = total columna
+        $filas          = [];
+        $matriz         = [];
+        $totalesFila    = [];
+        $totalesColumna = [];
         $totalGeneral   = 0;
 
         foreach ($rows as $r) {
@@ -1630,7 +1571,7 @@ public function store(Request $request)
 
             $keyFila = $rutaId . '|' . $lote . '|' . $comedor;
 
-            if (!isset($filas[$keyFila])) {
+            if (! isset($filas[$keyFila])) {
                 $filas[$keyFila] = [
                     'ruta_id'     => $rutaId,
                     'ruta_codigo' => $codigoRuta,
@@ -1643,10 +1584,10 @@ public function store(Request $request)
             $areaId = (int) $r->area_id;
             $total  = (int) $r->total;
 
-            if (!isset($matriz[$keyFila])) {
+            if (! isset($matriz[$keyFila])) {
                 $matriz[$keyFila] = [];
             }
-            if (!isset($matriz[$keyFila][$hId])) {
+            if (! isset($matriz[$keyFila][$hId])) {
                 $matriz[$keyFila][$hId] = [];
             }
 
@@ -1657,7 +1598,6 @@ public function store(Request $request)
             $totalGeneral                       += $total;
         }
 
-        // Ordenar filas por ruta, luego lote y comedor
         $filas = collect($filas)->sortBy(function ($f) {
             return sprintf(
                 '%s|%s|%s',
@@ -1667,12 +1607,6 @@ public function store(Request $request)
             );
         });
 
-        // ==================================================
-        // 4) Construir BLOQUES DE COLUMNAS ($columnas)
-        //     Cada bloque = un horario, con todas las áreas + subtotales
-        // ==================================================
-
-        // Array simple de áreas para usar dentro de cada bloque
         $areasArr = $areas->map(function (Area $a) {
             return [
                 'id'     => $a->id,
@@ -1681,7 +1615,6 @@ public function store(Request $request)
         })->values()->all();
 
         $columnas = $horarios->map(function (Horario $h) use ($areasArr) {
-            // Etiqueta similar a la que usas en create()
             $label = $h->etiqueta_completa
                 ?? trim(
                     ($h->nombre ? $h->nombre . ' ' : '') .
@@ -1695,11 +1628,10 @@ public function store(Request $request)
             return [
                 'horario_id' => $h->id,
                 'label'      => $label,
-                'areas'      => $areasArr,   // mismas áreas para todos los horarios
+                'areas'      => $areasArr,
             ];
         })->values()->all();
 
-        // Para la vista: colecciones "limpias"
         $horarios = $horarios->values();
         $areas    = $areas->values();
 
@@ -1713,7 +1645,7 @@ public function store(Request $request)
             'totalesFila',
             'totalesColumna',
             'totalGeneral',
-            'columnas'          // <<--- AHORA EXISTE EN LA VISTA
+            'columnas'
         ));
     }
 }
